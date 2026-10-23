@@ -189,7 +189,7 @@ th{
         <a href="#">Affectations</a>
         <div class="dropdown-content">
             <a href="ajouter_affectation.php">Affectations</a>
-            <a href="afficher_affectation_admin.php">Affigage des affectations</a>
+            <a href="afficher_affectation_admin.php">Affichage des affectations</a>
 			<a href="gerer_disponibilite_surv.php">Disponibilite des surveillants</a>
 			<a href="surveillants_affectes.php">Liste des surveillants affectes</a>
 			<a href="consulter_etudiants_salle.php">Etudiants par salle</a>
@@ -197,7 +197,15 @@ th{
 			<a href="rapport_affectations.php">Rapport d'affectation</a>
         </div>
     </div>
+	<div class="dropdown">
+		<a href="#">Documents</a>
+		<div class="dropdown-content">
+			<a href="ajouter_document.php">Partager un document</a>
+			<a href="afficher_documents.php">Liste des documents partages</a>
+		</div>
+	</div>
 	<a href="admin_connexions.php">Historique de connexion</a>
+	
 	<a href="tri_affectation.php">Trie des affectations</a>
 	<a href="filtrage_affectation.php">Filtrer les affectations</a>
 	<a href="historique_activites.php">Journal des activités</a>

@@ -176,6 +176,10 @@ Liste des étudiants
 <a class="btn" href="mes_affectations.php">
 Mes affectations
 </a>
+<a class="btn" href="documents_partages_etu.php">
+Documents partagés
+</a>
+
 
 
 

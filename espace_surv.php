@@ -308,6 +308,9 @@ Mon profil
 <a href="affectations_surv.php">
 Mes affectations
 </a>
+<a href="documents_partages_surv.php">
+    Documents partagés
+</a>
 
 <a href="logout_surv.php" class="logout">
 Déconnexion
