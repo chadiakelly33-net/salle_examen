@@ -49,6 +49,8 @@ if (!$etudiant) {
     exit;
 }
 
+include("menu_etu.php");
+
 $id_fac = $etudiant['id_fac'];
 $id_niveau = $etudiant['id_niveau'];
 
