@@ -311,6 +311,7 @@ Mes affectations
 <a href="documents_partages_surv.php">
     Documents partagés
 </a>
+<li><a href="rapports_surv.php">Mes rapports PDF</a></li>
 
 <a href="logout_surv.php" class="logout">
 Déconnexion

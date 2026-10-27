@@ -13,7 +13,7 @@ if (
     exit;
 }
 
-// 2. Vérifier le délai d'inactivité
+// 2. Vérifier le délai d'inactivité : 5 minutes
 $timeout = 300;
 
 if (
@@ -42,7 +42,7 @@ if ($id_document <= 0) {
     exit('Identifiant du document invalide.');
 }
 
-// 4. Vérifier que le document est partagé avec ce surveillant
+// 4. Vérifier que le document est actif et partagé avec ce surveillant
 $requete = $bdd->prepare("
     SELECT DISTINCT
         d.id_document,
@@ -53,6 +53,7 @@ $requete = $bdd->prepare("
     INNER JOIN partage_document p
         ON p.id_document = d.id_document
     WHERE d.id_document = :id_document
+      AND d.archive = 0
       AND p.type_destinataire = 'surveillant'
       AND p.id_surv = :id_surv
     LIMIT 1
@@ -67,7 +68,7 @@ $document = $requete->fetch(PDO::FETCH_ASSOC);
 
 if (!$document) {
     http_response_code(403);
-    exit('Vous n’êtes pas autorisé à consulter ce document.');
+    exit('Ce document est indisponible ou vous n’êtes pas autorisé à le consulter.');
 }
 
 // 5. Vérifier que le fichier existe

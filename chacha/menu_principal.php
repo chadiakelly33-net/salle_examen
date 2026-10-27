@@ -204,6 +204,7 @@ th{
 			<a href="afficher_documents.php">Liste des documents partages</a>
 		</div>
 	</div>
+	<li><a href="rapports.php">Rapports PDF</a></li>
 	<a href="admin_connexions.php">Historique de connexion</a>
 	
 	<a href="tri_affectation.php">Trie des affectations</a>

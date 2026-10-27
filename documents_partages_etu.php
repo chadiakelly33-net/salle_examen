@@ -52,8 +52,11 @@ if (!$etudiant) {
 $id_fac = $etudiant['id_fac'];
 $id_niveau = $etudiant['id_niveau'];
 
-// 4. Récupérer les documents partagés avec cet étudiant,
-// sa faculté ou son niveau
+// 4. Récupérer le texte recherché
+$recherche = trim($_GET['recherche'] ?? '');
+
+// 5. Récupérer uniquement les documents actifs partagés
+// avec l'étudiant, sa faculté ou son niveau
 $sql = "
     SELECT DISTINCT
         d.id_document,
@@ -64,7 +67,8 @@ $sql = "
     FROM document d
     INNER JOIN partage_document p
         ON p.id_document = d.id_document
-    WHERE p.type_destinataire = 'etudiant'
+    WHERE d.archive = 0
+      AND p.type_destinataire = 'etudiant'
       AND (
           p.id_etu = :id_etu
           OR (
@@ -76,16 +80,31 @@ $sql = "
               AND p.id_niveau = :id_niveau
           )
       )
-    ORDER BY d.date_ajout DESC
 ";
 
-$requete = $bdd->prepare($sql);
-
-$requete->execute([
+$params = [
     'id_etu' => $id_etu,
     'id_fac' => $id_fac,
     'id_niveau' => $id_niveau
-]);
+];
+
+// 6. Filtrer par nom ou description
+if ($recherche !== '') {
+    $sql .= "
+        AND (
+            d.nom_document LIKE :recherche_nom
+            OR d.description LIKE :recherche_description
+        )
+    ";
+
+    $params['recherche_nom'] = '%' . $recherche . '%';
+    $params['recherche_description'] = '%' . $recherche . '%';
+}
+
+$sql .= " ORDER BY d.date_ajout DESC";
+
+$requete = $bdd->prepare($sql);
+$requete->execute($params);
 
 $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -135,6 +154,38 @@ $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
             background: #3b4f66;
         }
 
+        .search-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 20px 0;
+        }
+
+        .search-form input {
+            flex: 1;
+            min-width: 180px;
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #003366;
+            color: white;
+            text-decoration: none;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background: #0055aa;
+        }
+
         .table-responsive {
             overflow-x: auto;
         }
@@ -145,7 +196,8 @@ $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
             margin-top: 20px;
         }
 
-        th, td {
+        th,
+        td {
             padding: 12px;
             border: 1px solid #ddd;
             text-align: left;
@@ -192,7 +244,8 @@ $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
                 margin: 10px auto;
             }
 
-            th, td {
+            th,
+            td {
                 padding: 8px;
             }
         }
@@ -209,18 +262,50 @@ $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
         Retour à mon espace
     </a>
 
+    <!-- Formulaire de recherche -->
+    <form
+        method="GET"
+        action="documents_partages_etu.php"
+        class="search-form"
+    >
+
+        <input
+            type="text"
+            name="recherche"
+            placeholder="Rechercher par nom ou description..."
+            value="<?= htmlspecialchars(
+                $recherche,
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>"
+        >
+
+        <button type="submit" class="btn">
+            Rechercher
+        </button>
+
+        <a href="documents_partages_etu.php" class="btn">
+            Réinitialiser
+        </a>
+
+    </form>
+
+    <p>
+        Documents trouvés :
+        <strong><?= count($documents) ?></strong>
+    </p>
+
     <?php if (empty($documents)): ?>
 
         <p class="vide">
-            Aucun document ne vous a été partagé pour le moment.
+            <?php if ($recherche !== ''): ?>
+                Aucun document actif ne correspond à votre recherche.
+            <?php else: ?>
+                Aucun document actif ne vous a été partagé pour le moment.
+            <?php endif; ?>
         </p>
 
     <?php else: ?>
-
-        <p>
-            Nombre de documents disponibles :
-            <strong><?= count($documents) ?></strong>
-        </p>
 
         <div class="table-responsive">
 

@@ -57,7 +57,7 @@ if ($id_document <= 0) {
     exit('Identifiant du document invalide.');
 }
 
-// 5. Vérifier que le document est partagé avec cet étudiant
+// 5. Vérifier que le document est actif et partagé avec cet étudiant
 $requete = $bdd->prepare("
     SELECT DISTINCT
         d.id_document,
@@ -67,6 +67,7 @@ $requete = $bdd->prepare("
     INNER JOIN partage_document p
         ON p.id_document = d.id_document
     WHERE d.id_document = :id_document
+      AND d.archive = 0
       AND p.type_destinataire = 'etudiant'
       AND (
           p.id_etu = :id_etu
@@ -93,7 +94,7 @@ $document = $requete->fetch(PDO::FETCH_ASSOC);
 
 if (!$document) {
     http_response_code(403);
-    exit('Vous n’êtes pas autorisé à télécharger ce document.');
+    exit('Ce document est indisponible ou vous n’êtes pas autorisé à le télécharger.');
 }
 
 // 6. Vérifier que le fichier existe
@@ -155,7 +156,6 @@ $nom_telechargement = preg_replace(
 
 header('Content-Type: ' . $types_mime[$extension]);
 
-// attachment force le téléchargement
 header(
     'Content-Disposition: attachment; filename="'
     . $nom_telechargement
@@ -169,3 +169,4 @@ header('Cache-Control: private, no-store');
 
 readfile($chemin_fichier);
 exit;
+

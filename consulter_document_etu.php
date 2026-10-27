@@ -46,7 +46,7 @@ if (!$etudiant) {
     exit('Accès refusé.');
 }
 
-// 4. Récupérer le document et vérifier le partage
+// 4. Vérifier l'identifiant du document
 $id_document = isset($_GET['id'])
     && ctype_digit((string) $_GET['id'])
     ? (int) $_GET['id']
@@ -57,6 +57,8 @@ if ($id_document <= 0) {
     exit('Identifiant du document invalide.');
 }
 
+// 5. Récupérer le document uniquement s'il est actif
+// et partagé avec l'étudiant, sa faculté ou son niveau
 $requete = $bdd->prepare("
     SELECT DISTINCT
         d.id_document,
@@ -67,6 +69,7 @@ $requete = $bdd->prepare("
     INNER JOIN partage_document p
         ON p.id_document = d.id_document
     WHERE d.id_document = :id_document
+      AND d.archive = 0
       AND p.type_destinataire = 'etudiant'
       AND (
           p.id_etu = :id_etu
@@ -93,10 +96,10 @@ $document = $requete->fetch(PDO::FETCH_ASSOC);
 
 if (!$document) {
     http_response_code(403);
-    exit('Vous n’êtes pas autorisé à consulter ce document.');
+    exit('Ce document est indisponible ou vous n’êtes pas autorisé à le consulter.');
 }
 
-// 5. Vérifier le fichier enregistré sur le serveur
+// 6. Vérifier le fichier enregistré sur le serveur
 $nom_fichier = basename($document['fichier']);
 
 $chemin_fichier = __DIR__
@@ -111,7 +114,7 @@ if (
     exit('Le fichier est introuvable.');
 }
 
-// 6. Déterminer le type du fichier
+// 7. Déterminer le type du fichier
 $extension = strtolower(
     pathinfo($nom_fichier, PATHINFO_EXTENSION)
 );
@@ -134,16 +137,21 @@ if (!isset($types_mime[$extension])) {
     exit('Ce format de document n’est pas pris en charge.');
 }
 
-// 7. Demander l'ouverture du document sans forcer le téléchargement
+// 8. Afficher le document sans forcer son téléchargement
 while (ob_get_level() > 0) {
     ob_end_clean();
 }
 
 header('Content-Type: ' . $types_mime[$extension]);
-header('Content-Disposition: inline; filename="' . $nom_fichier . '"');
+header(
+    'Content-Disposition: inline; filename="' .
+    str_replace('"', '', $nom_fichier) .
+    '"'
+);
 header('Content-Length: ' . filesize($chemin_fichier));
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: private, no-store');
 
 readfile($chemin_fichier);
 exit;
+

@@ -13,20 +13,28 @@ if (
 
 require_once("connexionDB.php");
 
+// Créer un jeton de sécurité pour les formulaires
+if (empty($_SESSION["csrf_token"])) {
+    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+}
+
 // Recherche des documents
 $recherche = trim($_GET["recherche"] ?? "");
 
 $sql = "
     SELECT id_document, nom_document, fichier, description, date_ajout
     FROM document
+    WHERE archive = 0
 ";
 
 $params = [];
 
 if ($recherche !== "") {
     $sql .= "
-        WHERE nom_document LIKE ?
-        OR description LIKE ?
+        AND (
+            nom_document LIKE ?
+            OR description LIKE ?
+        )
     ";
 
     $params[] = "%" . $recherche . "%";
@@ -114,6 +122,14 @@ $documents = $req->fetchAll(PDO::FETCH_ASSOC);
             background: #cf3030;
         }
 
+        .btn-archive {
+            background: #805600;
+        }
+
+        .btn-archive:hover {
+            background: #a87500;
+        }
+
         .search-form {
             display: flex;
             flex-wrap: wrap;
@@ -178,6 +194,11 @@ $documents = $req->fetchAll(PDO::FETCH_ASSOC);
             gap: 6px;
         }
 
+        .form-archive {
+            display: inline-block;
+            margin: 0;
+        }
+
         @media (max-width: 600px) {
             body {
                 padding: 10px;
@@ -195,7 +216,6 @@ $documents = $req->fetchAll(PDO::FETCH_ASSOC);
 <div class="container">
 
     <h1>Gestion des documents</h1>
-	
 
     <!-- Actions principales -->
     <div class="actions">
@@ -204,20 +224,22 @@ $documents = $req->fetchAll(PDO::FETCH_ASSOC);
             + Ajouter un document
         </a>
 
+        <a class="btn" href="documents_archives.php">
+            Documents archivés
+        </a>
+
         <a class="btn" href="archive_documents.php">
             Archive des suppressions
         </a>
 
-		<a href="dashboard.php" class="bouton-retour">
-			 Retour au tableau de bord
-		</a>
-
-
+        <a href="dashboard.php" class="btn">
+            Retour au tableau de bord
+        </a>
 
     </div>
 
     <!-- Formulaire de recherche -->
-    <form method="GET" action="affichage_documents.php" class="search-form">
+    <form method="GET" action="afficher_documents.php" class="search-form">
 
         <input
             type="text"
@@ -230,7 +252,7 @@ $documents = $req->fetchAll(PDO::FETCH_ASSOC);
             Rechercher
         </button>
 
-        <a href="affichage_documents.php" class="btn">
+        <a href="afficher_documents.php" class="btn">
             Réinitialiser
         </a>
 
@@ -238,7 +260,7 @@ $documents = $req->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Nombre de documents -->
     <p class="nombre-documents">
-        Documents trouvés :
+        Documents actifs trouvés :
         <strong><?= count($documents) ?></strong>
     </p>
 
@@ -311,6 +333,37 @@ $documents = $req->fetchAll(PDO::FETCH_ASSOC);
                                     Modifier
                                 </a>
 
+                                <!-- Archiver volontairement un document -->
+                                <form
+                                    method="POST"
+                                    action="archiver_document.php"
+                                    class="form-archive"
+                                    onsubmit="return confirm('Voulez-vous vraiment archiver ce document ? Il sera retiré de la liste des documents actifs.');"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="id_document"
+                                        value="<?= (int)$doc["id_document"] ?>"
+                                    >
+
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="<?= htmlspecialchars(
+                                            $_SESSION["csrf_token"],
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>"
+                                    >
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-archive"
+                                    >
+                                        Archiver
+                                    </button>
+                                </form>
+
                                 <a
                                     class="btn btn-delete"
                                     href="supprimer_document.php?id=<?= (int)$doc["id_document"] ?>"
@@ -331,9 +384,9 @@ $documents = $req->fetchAll(PDO::FETCH_ASSOC);
                 <tr>
                     <td colspan="5" class="message-vide">
                         <?php if ($recherche !== ""): ?>
-                            Aucun document ne correspond à votre recherche.
+                            Aucun document actif ne correspond à votre recherche.
                         <?php else: ?>
-                            Aucun document n'est enregistré pour le moment.
+                            Aucun document actif n'est enregistré pour le moment.
                         <?php endif; ?>
                     </td>
                 </tr>

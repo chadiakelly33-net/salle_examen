@@ -31,8 +31,12 @@ $_SESSION['last_activity'] = time();
 
 $id_surv = (int) $_SESSION['id_surv'];
 
-// 3. Récupérer les documents partagés avec ce surveillant
-$requete = $bdd->prepare("
+// 3. Récupérer le texte recherché
+$recherche = trim($_GET['recherche'] ?? '');
+
+// 4. Récupérer uniquement les documents actifs
+// partagés avec ce surveillant
+$sql = "
     SELECT DISTINCT
         d.id_document,
         d.nom_document,
@@ -41,20 +45,38 @@ $requete = $bdd->prepare("
     FROM document d
     INNER JOIN partage_document p
         ON p.id_document = d.id_document
-    WHERE p.type_destinataire = 'surveillant'
+    WHERE d.archive = 0
+      AND p.type_destinataire = 'surveillant'
       AND p.id_surv = :id_surv
-    ORDER BY d.date_ajout DESC
-");
+";
 
-$requete->execute([
+$params = [
     'id_surv' => $id_surv
-]);
+];
+
+// 5. Ajouter la recherche par nom ou description
+if ($recherche !== '') {
+    $sql .= "
+        AND (
+            d.nom_document LIKE :recherche_nom
+            OR d.description LIKE :recherche_description
+        )
+    ";
+
+    $params['recherche_nom'] = '%' . $recherche . '%';
+    $params['recherche_description'] = '%' . $recherche . '%';
+}
+
+$sql .= " ORDER BY d.date_ajout DESC";
+
+$requete = $bdd->prepare($sql);
+$requete->execute($params);
 
 $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
-<!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -89,6 +111,46 @@ $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
             margin-bottom: 25px;
         }
 
+        .navigation {
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 11px 15px;
+            border: none;
+            border-radius: 5px;
+            background: #003366;
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            opacity: 0.85;
+        }
+
+        .reinitialiser {
+            background: #6c757d;
+        }
+
+        .search-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .search-form input {
+            flex: 1;
+            min-width: 200px;
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
         .table-container {
             overflow-x: auto;
         }
@@ -98,7 +160,8 @@ $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
             border-collapse: collapse;
         }
 
-        th, td {
+        th,
+        td {
             padding: 13px;
             border-bottom: 1px solid #ddd;
             text-align: left;
@@ -140,6 +203,16 @@ $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
             text-align: center;
             color: #666;
         }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+        }
     </style>
 </head>
 
@@ -150,13 +223,60 @@ $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
     <h2>Documents partagés</h2>
 
     <p class="description">
-        Consultez les documents mis à votre disposition par l'administration.
+        Consultez et téléchargez les documents actifs mis à votre disposition
+        par l'administration.
+    </p>
+
+    <div class="navigation">
+        <a class="btn" href="espace_surv.php">
+            Retour à mon espace
+        </a>
+    </div>
+
+    <!-- Formulaire de recherche -->
+    <form
+        method="GET"
+        action="documents_partages_surv.php"
+        class="search-form"
+    >
+
+        <input
+            type="text"
+            name="recherche"
+            placeholder="Rechercher par nom ou description..."
+            value="<?= htmlspecialchars(
+                $recherche,
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>"
+        >
+
+        <button type="submit" class="btn">
+            Rechercher
+        </button>
+
+        <a
+            href="documents_partages_surv.php"
+            class="btn reinitialiser"
+        >
+            Réinitialiser
+        </a>
+
+    </form>
+
+    <p>
+        Documents trouvés :
+        <strong><?= count($documents) ?></strong>
     </p>
 
     <?php if (empty($documents)): ?>
 
         <div class="vide">
-            Aucun document ne vous a été partagé pour le moment.
+            <?php if ($recherche !== ''): ?>
+                Aucun document actif ne correspond à votre recherche.
+            <?php else: ?>
+                Aucun document actif ne vous a été partagé pour le moment.
+            <?php endif; ?>
         </div>
 
     <?php else: ?>
@@ -178,10 +298,14 @@ $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
 
                 <?php foreach ($documents as $document): ?>
 
-                    <?php $id_document = (int) $document['id_document']; ?>
+                    <?php
+                    $id_document = (int) $document['id_document'];
+                    ?>
 
                     <tr>
-                        <td><?= $id_document ?></td>
+                        <td>
+                            <?= $id_document ?>
+                        </td>
 
                         <td>
                             <?= htmlspecialchars(
@@ -239,3 +363,4 @@ $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
 
 </body>
 </html>
+
