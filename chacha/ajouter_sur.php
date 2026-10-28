@@ -353,6 +353,19 @@ Login
     required
 >
 
+<label>
+    Adresse e-mail
+</label>
+
+<input
+    type="email"
+    name="email"
+    placeholder="exemple@gmail.com"
+    required
+>
+
+
+
 
 <label>
 

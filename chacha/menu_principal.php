@@ -205,9 +205,10 @@ th{
 		</div>
 	</div>
 	<a href="rapports.php">Rapports PDF</a>
+	<a href="rapports_personnalises.php">Rapport personnalisé</a>
 	<a href="export_excel.php">Export Excel</a>
+	<a href="analyse_comparative.php">Comparaisons</a>
 	<a href="admin_connexions.php">Historique de connexion</a>
-	
 	<a href="tri_affectation.php">Trie des affectations</a>
 	<a href="filtrage_affectation.php">Filtrer les affectations</a>
 	<a href="historique_activites.php">Journal des activités</a>

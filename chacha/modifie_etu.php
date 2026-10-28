@@ -111,6 +111,17 @@ type="text"
 name="prenom" 
 value="<?= htmlspecialchars($data['prenom_etu']) ?>">
 
+<label>Adresse e-mail :</label>
+
+<input
+type="email"
+name="email"
+value="<?= htmlspecialchars($data['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+required
+>
+
+
+
 
 
 <label>Photo actuelle :</label>

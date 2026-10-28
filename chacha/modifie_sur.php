@@ -1,4 +1,3 @@
-```php
 <?php
 
 session_start();
@@ -22,12 +21,13 @@ $id_surv = $_GET["id"];
 // Récupérer le surveillant
 $req = $bdd->prepare("
     SELECT 
-        id_surv,
-        nom_surv,
-        prenom_surv,
-        login,
-        photo
-    FROM surveillant
+    id_surv,
+    nom_surv,
+    prenom_surv,
+    login,
+    email,
+    photo
+FROM surveillant
     WHERE id_surv = ?
 ");
 
@@ -178,6 +178,7 @@ label{
 ========================= */
 
 input[type="text"],
+input[type="email"],
 input[type="file"]{
 
     width:100%;
@@ -202,8 +203,8 @@ input[type="file"]{
 ========================= */
 
 input[type="text"]:focus,
+input[type="email"]:focus,
 input[type="file"]:focus{
-
     outline:none;
 
     border:1px solid #003366;
@@ -458,6 +459,19 @@ Login
     required
 >
 
+<!-- E-MAIL -->
+<label>
+    Adresse e-mail
+</label>
+
+<input
+    type="email"
+    name="email"
+    value="<?= htmlspecialchars($surv["email"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    required
+>
+
+
 
 
 <!-- PHOTO ACTUELLE -->
@@ -559,4 +573,4 @@ Retour à la liste des surveillants
 </body>
 
 </html>
-```
+

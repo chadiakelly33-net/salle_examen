@@ -1,207 +1,215 @@
 <?php
 session_start();
-if(!isset($_SESSION["id_admin"]) || $_SESSION["role"] != "admin"){
+
+if (
+    !isset($_SESSION["id_admin"]) ||
+    !isset($_SESSION["role"]) ||
+    $_SESSION["role"] != "admin"
+) {
     header("Location: connexion.php");
     exit();
 }
 
 include("connexionDB.php");
-
-if(isset($_POST["ajouter"])){
-
-    $req = $bdd->prepare("
-        INSERT INTO etudiant (nom_etu, prenom_etu, id_niveau, id_fac, login, motdepasse)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ");
-
-    $req->execute([
-        $_POST["nom"],
-        $_POST["prenom"],
-        $_POST["id_niveau"],
-        $_POST["id_fac"],
-        $_POST["login"],
-        $_POST["motdepasse"]
-    ]);
-}
-
 ?>
 
+<!DOCTYPE html>
 <html lang="fr">
+
 <head>
 <meta charset="UTF-8">
-<title>Liste étudiants</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liste des étudiants</title>
 
 <style>
-
-body{
-    font-family:Arial, sans-serif;
-    background:#f9fafb;
-    margin:0;
+body {
+    font-family: Arial, sans-serif;
+    background: #f9fafb;
+    margin: 0;
 }
 
-/* titre */
-h2{
-    text-align:center;
-    color:#2c3e50;
-    margin:20px 0;
+h2 {
+    text-align: center;
+    color: #003366;
+    margin: 25px 0;
 }
 
-/* table */
-table{
-    width:95%;
-    margin:auto;
-    border-collapse:collapse;
-    background:white;
-    table-layout:fixed;
-}
-/* header */
-/* header */
-th{
-    background:#f1f3f5;
-    color:#2c3e50;
-    padding:12px;
-    border-bottom:1px solid #ddd;
-    text-align:center;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
+.contenu {
+    margin-left: 240px;
+    padding: 20px;
 }
 
-/* cellules */
-td{
-    padding:12px;
-    text-align:center;
-    border-bottom:1px solid #eee;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
 }
 
-/* hover */
-tr:hover{
-    background:#f7f9fc;
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    min-width: 850px;
 }
 
-/* liens actions */
-a{
-    text-decoration:none;
-    padding:6px 10px;
-    border-radius:5px;
-    margin:2px;
-    display:inline-block;
+th {
+    background: #003366;
+    color: white;
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
 }
 
-/* modifier */
-a[href*="modifie"]{
-    background:#e3f2fd;
-    color:#1565c0;
+td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
 }
 
-/* supprimer (gris au lieu de rouge) */
-a[href*="supprimer"]{
-    background:#f5f5f5;
-    color:#555;
+tr:hover {
+    background: #f1f6fb;
 }
 
-/* hover liens */
-a:hover{
-    opacity:0.8;
+td img {
+    border-radius: 50%;
+    object-fit: cover;
 }
 
+a.action {
+    text-decoration: none;
+    padding: 7px 10px;
+    border-radius: 5px;
+    margin: 3px;
+    display: inline-block;
+    font-size: 13px;
+}
+
+a.modifier {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+a.supprimer {
+    background: #f5f5f5;
+    color: #555;
+}
+
+a.action:hover {
+    opacity: .8;
+}
+
+@media (max-width: 700px) {
+    .contenu {
+        margin-left: 0;
+        padding: 12px;
+    }
+}
 </style>
-
 </head>
 
 <body>
 
 <aside id="menu" class="menu">
-<?php include 'Menu_principal.php';?>
+    <?php include("Menu_principal.php"); ?>
 </aside>
 
+<div class="contenu">
 
-<h2>Liste des étudiants</h2>
+    <h2>Liste des étudiants</h2>
 
-<table>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Photo</th>
+                    <th>Nom</th>
+                    <th>Prénom</th>
+                    <th>Niveau</th>
+                    <th>Faculté</th>
+                    <th>Login</th>
+                    <th>E-mail</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
 
-<tr>
-<th>Photo</th>
-<th>Nom</th>
-<th>Prénom</th>
-<th>Niveau</th>
-<th>Faculté</th>
-<th>login</th>
-<!--<th>mot de passe</th>-->
-<th>Actions</th>
-</tr>
+            <tbody>
+            <?php
+            $req = $bdd->query("
+                SELECT
+                    e.id_etu,
+                    e.nom_etu,
+                    e.prenom_etu,
+                    e.photo,
+                    e.login,
+                    e.email,
+                    n.nom_niveau,
+                    f.nom_fac
+                FROM etudiant e
+                JOIN niveau_etude n
+                    ON e.id_niveau = n.id_niveau
+                JOIN faculte f
+                    ON e.id_fac = f.id_fac
+                ORDER BY e.nom_etu ASC
+            ");
 
-<?php
-$req = $bdd->query("
-SELECT 
-e.id_etu,
-e.nom_etu,
-e.prenom_etu,
-e.photo,
-e.login,
-e.motdepasse,
-n.nom_niveau,
-f.nom_fac
+            while ($row = $req->fetch(PDO::FETCH_ASSOC)) {
+            ?>
 
-FROM etudiant e
+                <tr>
+                    <td>
+                        <?php
+                        $photoPath = "uploads/" . ($row["photo"] ?? "");
+                        if (
+                            !empty($row["photo"]) &&
+                            file_exists($photoPath)
+                        ) {
+                        ?>
+                            <img
+                                src="<?= htmlspecialchars($photoPath, ENT_QUOTES, 'UTF-8') ?>"
+                                width="60"
+                                height="60"
+                                alt="Photo de l'étudiant"
+                            >
+                        <?php } else { ?>
+                            <img
+                                src="uploads/default.png"
+                                width="60"
+                                height="60"
+                                alt="Photo par défaut"
+                            >
+                        <?php } ?>
+                    </td>
 
-JOIN niveau_etude n 
-ON e.id_niveau=n.id_niveau
+                    <td><?= htmlspecialchars($row["nom_etu"] ?? "", ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($row["prenom_etu"] ?? "", ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($row["nom_niveau"] ?? "", ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($row["nom_fac"] ?? "", ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($row["login"] ?? "", ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($row["email"] ?? "Non renseigné", ENT_QUOTES, 'UTF-8') ?></td>
 
-JOIN faculte f 
-ON e.id_fac=f.id_fac
-");
+                    <td>
+                        <a
+                            class="action modifier"
+                            href="modifie_etu.php?id=<?= (int)$row['id_etu'] ?>"
+                        >Modifier</a>
 
-while($row = $req->fetch()){
-?>
+                        <a
+                            class="action supprimer"
+                            href="supprimer_etu.php?id=<?= (int)$row['id_etu'] ?>"
+                            onclick="return confirm('Supprimer cet étudiant ?')"
+                        >Supprimer</a>
+                    </td>
+                </tr>
 
-<tr>
-<td>
+            <?php } ?>
+            </tbody>
+        </table>
+    </div>
 
-<?php if(!empty($row["photo"]) && file_exists("uploads/".$row["photo"])){ ?>
-
-<img 
-src="uploads/<?= htmlspecialchars($row["photo"]) ?>"
-width="70"
-height="70"
-style="
-border-radius:50%;
-object-fit:cover;
-">
-
-<?php }else{ ?>
-
-<img 
-src="uploads/default.png"
-width="70"
-height="70"
-style="
-border-radius:50%;
-object-fit:cover;
-">
-
-<?php } ?>
-
-</td>
-<td><?= $row["nom_etu"] ?></td>
-<td><?= $row["prenom_etu"] ?></td>
-<td><?= $row["nom_niveau"] ?></td>
-<td><?= $row["nom_fac"] ?></td>
-<td><?= $row["login"] ?></td>
-<!--<td>********</td>-->
-
-<td>
-<a href="modifie_etu.php?id=<?= $row['id_etu'] ?>">Modifier</a>
-<a href="supprimer_etu.php?id=<?= $row['id_etu'] ?>" onclick="return confirm('Supprimer cet étudiant ?')">Supprimer</a>
-</td>
-</tr>
-
-<?php } ?>
-
-</table>
+</div>
 
 </body>
 </html>
+

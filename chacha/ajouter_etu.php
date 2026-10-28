@@ -201,6 +201,14 @@ type="text"
 name="login"
 required>
 
+<label>Adresse e-mail</label>
+
+<input
+type="email"
+name="email"
+placeholder="exemple@gmail.com"
+required>
+
 <div class="info">
 
 <b>Mot de passe par défaut :</b>
