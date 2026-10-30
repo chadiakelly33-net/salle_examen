@@ -1,221 +1,305 @@
 <?php
-/*session_start();*/
-if(!isset($_SESSION["id_admin"]) || $_SESSION["role"] != "admin"){
+// Démarrage de la session
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Vérification de l'accès administrateur
+if (
+    !isset($_SESSION["id_admin"]) ||
+    ($_SESSION["role"] ?? "") !== "admin"
+) {
     header("Location: connexion.php");
     exit();
 }
 
-include("connexionDB.php");
+// Déconnexion après 5 minutes d'inactivité
+$timeout = 300;
 
-$timeout = 300; // 5 minutes
+if (
+    isset($_SESSION["last_activity"]) &&
+    (time() - $_SESSION["last_activity"]) > $timeout
+) {
+    session_unset();
+    session_destroy();
 
-
-if(isset($_SESSION["last_activity"])){
-
-    if(time() - $_SESSION["last_activity"] > $timeout){
-
-        session_unset();
-        session_destroy();
-
-        header("Location: connexion.php?timeout=1");
-        exit();
-
-    }
-
+    header("Location: connexion.php?timeout=1");
+    exit();
 }
 
-
+// Actualisation de la dernière activité
 $_SESSION["last_activity"] = time();
-
 ?>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>Menu Sidebar</title>
 
 <style>
-
-/* RESET */
-body{
-    margin:0;
-    font-family:Arial;
-    background:#f4f6f9;
-	padding-left:230px;
+/* Mise en page générale */
+body {
+    margin: 0;
+    padding-left: 230px;
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
 }
 
-/* SIDEBAR */
-.sidebar{
-    position:fixed;
-    top:0;
-    left:0;
-    width:230px;
-    height:100%;
-    background:#003366;
-    padding-top:20px;
-    overflow-y:auto;
+/* Menu latéral */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 230px;
+    height: 100vh;
+    background: #003366;
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 20px 0;
+    z-index: 1000;
 }
 
-/* TITRE MENU */
-.sidebar h2{
-    color:white;
-    text-align:center;
-    margin-bottom:20px;
+/* Titre du menu */
+.sidebar h2 {
+    color: white;
+    text-align: center;
+    margin: 0 0 25px;
+    font-size: 23px;
+    letter-spacing: 2px;
 }
 
-/* LIENS PRINCIPAUX */
-.sidebar a{
-    display:block;
-    color:white;
-    text-decoration:none;
-    padding:12px 18px;
-    font-size:15px;
-    transition:0.3s;
+/* Liens principaux */
+.sidebar a {
+    display: block;
+    color: white;
+    text-decoration: none;
+    padding: 12px 18px;
+    font-size: 14px;
+    transition: 0.2s;
+    box-sizing: border-box;
 }
 
-/* HOVER */
-.sidebar a:hover{
-    background:#ffd700;
-    color:#003366;
+.sidebar a:hover {
+    background: #ffd700;
+    color: #003366;
 }
 
-/* DROPDOWN */
-.dropdown{
-    position:relative;
+/* Rubriques déroulantes */
+.sidebar details {
+    width: 100%;
 }
 
-/* SOUS MENU */
-.dropdown-content{
-    display:none;
-    background:#002244;
+.sidebar summary {
+    display: block;
+    color: white;
+    padding: 13px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    list-style: none;
+    transition: 0.2s;
+    box-sizing: border-box;
 }
 
-.dropdown-content a{
-    padding-left:35px;
-    font-size:14px;
+.sidebar summary::-webkit-details-marker {
+    display: none;
 }
 
-/* AFFICHAGE AU SURVOL */
-.dropdown:hover .dropdown-content{
-    display:block;
+.sidebar summary::after {
+    content: "＋";
+    float: right;
+    font-size: 14px;
 }
 
-/* CONTENU PAGE */
-.content{
-    margin-left:230px;
-    padding:20px;
-    width:calc(100% - 230px);
-    box-sizing:border-box;
+.sidebar details[open] summary::after {
+    content: "−";
 }
 
-/* TITRE */
-.title{
-    text-align:center;
-    color:#003366;
-    margin-top:20px;
-    font-size:28px;
+.sidebar summary:hover {
+    background: #ffd700;
+    color: #003366;
 }
 
-/* TABLEAUX */
-table{
-    width:100%;
-    border-collapse:collapse;
-    background:white;
+/* Sous-menu */
+.sidebar .submenu {
+    background: #002244;
 }
 
-th,td{
-    border:1px solid #ddd;
-    padding:10px;
-    text-align:center;
+.sidebar .submenu a {
+    padding: 10px 12px 10px 35px;
+    font-size: 13px;
 }
 
-th{
-    background:#003366;
-    color:white;
+/* Séparateur */
+.sidebar .separator {
+    height: 1px;
+    background: rgba(255,255,255,0.2);
+    margin: 12px 15px;
 }
 
+/* Déconnexion */
+.sidebar .logout {
+    color: #ffd700;
+    margin-top: 10px;
+}
+
+/* Contenu des pages */
+.page-content {
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Adaptation aux petits écrans */
+@media screen and (max-width: 768px) {
+    body {
+        padding-left: 190px;
+    }
+
+    .sidebar {
+        width: 190px;
+    }
+
+    .sidebar a,
+    .sidebar summary {
+        font-size: 13px;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .sidebar .submenu a {
+        padding-left: 25px;
+    }
+}
 </style>
-</head>
 
-<body>
-
-<div class="sidebar">
+<aside class="sidebar">
 
     <h2>MENU</h2>
 
     <a href="dashboard.php">Dashboard</a>
 
-    <div class="dropdown">
-        <a href="#">Étudiants</a>
-        <div class="dropdown-content">
-            <a href="ajouter_etu.php">Ajouter</a>
-            <a href="afficher_etu.php">Afficher</a>
-			<a href="rapport_etudiants.php">Rapport</a>
+    <details>
+        <summary>Étudiants</summary>
+        <div class="submenu">
+            <a href="ajouter_etu.php">Ajouter un étudiant</a>
+            <a href="afficher_etu.php">Afficher les étudiants</a>
+            <a href="rapport_etudiants.php">Rapport des étudiants</a>
         </div>
-    </div>
+    </details>
 
-    <div class="dropdown">
-        <a href="#">Cours</a>
-        <div class="dropdown-content">
-            <a href="ajouter_cours.php">Ajouter</a>
-            <a href="afficher_cours.php">Afficher</a>
+    <details>
+        <summary>Cours</summary>
+        <div class="submenu">
+            <a href="ajouter_cours.php">Ajouter un cours</a>
+            <a href="afficher_cours.php">Afficher les cours</a>
         </div>
-    </div>
+    </details>
 
-    <div class="dropdown">
-        <a href="#">Facultés</a>
-        <div class="dropdown-content">
-            <a href="ajouter_fac.php">Ajouter</a>
-            <a href="afficher_fac.php">Afficher</a>
+    <details>
+        <summary>Facultés</summary>
+        <div class="submenu">
+            <a href="ajouter_fac.php">Ajouter une faculté</a>
+            <a href="afficher_fac.php">Afficher les facultés</a>
         </div>
-    </div>
+    </details>
 
-    <div class="dropdown">
-        <a href="#">Salles</a>
-        <div class="dropdown-content">
-            <a href="ajouter_salle.php">Ajouter</a>
-            <a href="afficher_salle.php">Afficher</a>
+    <details>
+        <summary>Salles</summary>
+        <div class="submenu">
+            <a href="ajouter_salle.php">Ajouter une salle</a>
+            <a href="afficher_salle.php">Afficher les salles</a>
         </div>
-    </div>
+    </details>
 
-    <div class="dropdown">
-        <a href="#">Surveillants</a>
-        <div class="dropdown-content">
-            <a href="ajouter_sur.php">Ajouter</a>
-            <a href="afficher_sur.php">Afficher</a>
+    <details>
+        <summary>Surveillants</summary>
+        <div class="submenu">
+            <a href="ajouter_sur.php">Ajouter un surveillant</a>
+            <a href="afficher_sur.php">Afficher les surveillants</a>
+            <a href="gerer_disponibilite_surv.php">Disponibilité des surveillants</a>
         </div>
-    </div>
+    </details>
 
-    <div class="dropdown">
-        <a href="#">Affectations</a>
-        <div class="dropdown-content">
-            <a href="ajouter_affectation.php">Affectations</a>
-            <a href="afficher_affectation_admin.php">Affichage des affectations</a>
-			<a href="gerer_disponibilite_surv.php">Disponibilite des surveillants</a>
-			<a href="surveillants_affectes.php">Liste des surveillants affectes</a>
-			<a href="consulter_etudiants_salle.php">Etudiants par salle</a>
-			<a href="recherche_affectation.php">Rechercher les affectations</a>
-			<a href="rapport_affectations.php">Rapport d'affectation</a>
+    <details>
+        <summary>Affectations</summary>
+        <div class="submenu">
+            <a href="ajouter_affectation.php">Ajouter une affectation</a>
+            <a href="afficher_affectation_admin.php">Afficher les affectations</a>
+            <a href="surveillants_affectes.php">Surveillants affectés</a>
+            <a href="consulter_etudiants_salle.php">Étudiants par salle</a>
+            <a href="recherche_affectation.php">Rechercher les affectations</a>
+            <a href="rapport_affectations.php">Rapport des affectations</a>
+            <a href="tri_affectation.php">Trier les affectations</a>
+            <a href="filtrage_affectation.php">Filtrer les affectations</a>
         </div>
-    </div>
-	<div class="dropdown">
-		<a href="#">Documents</a>
-		<div class="dropdown-content">
-			<a href="ajouter_document.php">Partager un document</a>
-			<a href="afficher_documents.php">Liste des documents partages</a>
-		</div>
-	</div>
-	<a href="rapports.php">Rapports PDF</a>
-	<a href="rapports_personnalises.php">Rapport personnalisé</a>
-	<a href="export_excel.php">Export Excel</a>
-	<a href="analyse_comparative.php">Comparaisons</a>
-	<a href="admin_connexions.php">Historique de connexion</a>
-	<a href="tri_affectation.php">Trie des affectations</a>
-	<a href="filtrage_affectation.php">Filtrer les affectations</a>
-	<a href="historique_activites.php">Journal des activités</a>
-	<a href="afficher_archives.php">Archivage</a>
-	<a href="deconnexion.php">Deconnexion</a>
+    </details>
 
-</div>
+    <details>
+        <summary>Documents</summary>
+        <div class="submenu">
+            <a href="ajouter_document.php">Ajouter un document</a>
+            <a href="afficher_documents.php">Documents partagés</a>
+            <a href="envoyer_document.php">Envoyer un document</a>
+            <a href="documents_recus.php">Documents reçus</a>
+        </div>
+    </details>
 
-</body>
-</html>
+    <details>
+        <summary>Communication</summary>
+        <div class="submenu">
+            <a href="chat_admin.php">Chat en temps réel</a>
+        </div>
+    </details>
+
+    <details>
+        <summary>Notifications par e-mail</summary>
+        <div class="submenu">
+            <a href="creer_evenement.php">Créer un événement</a>
+            <a href="historique_notifications.php">Historique des notifications</a>
+        </div>
+    </details>
+
+    <details>
+        <summary>Rapports et statistiques</summary>
+        <div class="submenu">
+            <a href="rapports.php">Rapports PDF</a>
+            <a href="rapports_personnalises.php">Rapports personnalisés</a>
+            <a href="export_excel.php">Export Excel</a>
+            <a href="analyse_comparative.php">Comparaisons</a>
+            <a href="previsions_statistiques.php">Prévisions statistiques</a>
+        </div>
+    </details>
+
+    <details>
+        <summary>Historique et sécurité</summary>
+        <div class="submenu">
+            <a href="admin_connexions.php">Historique des connexions</a>
+            <a href="historique_activites.php">Journal des activités</a>
+            <a href="afficher_archives.php">Archivage</a>
+        </div>
+    </details>
+
+    <a href="alertes.php">Alertes automatiques</a>
+
+    <div class="separator"></div>
+
+    <a href="deconnexion.php" class="logout">Déconnexion</a>
+
+</aside>
+
+<script>
+document.querySelectorAll(".sidebar details").forEach(function(groupe) {
+
+    groupe.addEventListener("toggle", function() {
+
+        if (groupe.open) {
+
+            document.querySelectorAll(".sidebar details").forEach(function(autre) {
+
+                if (autre !== groupe) {
+                    autre.open = false;
+                }
+
+            });
+
+        }
+
+    });
+
+});
+</script>

@@ -1,29 +1,24 @@
 <?php
-
 session_start();
 
-
-// Protection accès direct
+/* Protection de l'accès direct */
 if (
     !isset($_SESSION["id_etu"]) ||
     !isset($_SESSION["role"]) ||
-    $_SESSION["role"] != "etudiant"
+    $_SESSION["role"] !== "etudiant"
 ) {
     header("Location: login_etu.php");
     exit();
 }
 
+/* Connexion à la base de données */
+require_once __DIR__ . "/connexionDB.php";
 
-include("connexionDB.php");
-
-
-// Gestion timeout : 5 minutes
+/* Gestion du timeout : 5 minutes */
 $timeout = 300;
 
 if (isset($_SESSION["last_activity"])) {
-
     if (time() - $_SESSION["last_activity"] > $timeout) {
-
         session_unset();
         session_destroy();
 
@@ -34,35 +29,32 @@ if (isset($_SESSION["last_activity"])) {
 
 $_SESSION["last_activity"] = time();
 
+$id_etu = (int) $_SESSION["id_etu"];
 
-$id_etu = $_SESSION["id_etu"];
-
-
-// Informations de l'étudiant
+/* Informations de l'étudiant */
 $req = $bdd->prepare("
     SELECT
-        nom_etu,
-        prenom_etu,
-        login,
-        nom_fac,
-        nom_niveau
-    FROM etudiant
-    JOIN faculte ON etudiant.id_fac = faculte.id_fac
-    JOIN niveau_etude ON etudiant.id_niveau = niveau_etude.id_niveau
-    WHERE id_etu = ?
+        e.nom_etu,
+        e.prenom_etu,
+        e.login,
+        f.nom_fac,
+        n.nom_niveau
+    FROM etudiant e
+    JOIN faculte f ON e.id_fac = f.id_fac
+    JOIN niveau_etude n ON e.id_niveau = n.id_niveau
+    WHERE e.id_etu = ?
 ");
 
 $req->execute([$id_etu]);
-
 $etu = $req->fetch(PDO::FETCH_ASSOC);
 
-
 if (!$etu) {
-    die("Etudiant introuvable");
+    session_unset();
+    session_destroy();
+    die("Étudiant introuvable.");
 }
 
-
-// Examens à venir
+/* Examens à venir */
 $reqExamens = $bdd->prepare("
     SELECT
         c.nom_cours,
@@ -74,280 +66,306 @@ $reqExamens = $bdd->prepare("
     JOIN cours c ON a.id_cours = c.id_cours
     JOIN salle s ON a.id_salle = s.id_salle
     WHERE a.id_etu = ?
-    AND (
-        a.date_exam > CURDATE()
-        OR (
-            a.date_exam = CURDATE()
-            AND a.heure_fin >= CURTIME()
-        )
-    )
+      AND (
+          a.date_exam > CURDATE()
+          OR (
+              a.date_exam = CURDATE()
+              AND a.heure_fin >= CURTIME()
+          )
+      )
     ORDER BY a.date_exam, a.heure_debut
 ");
 
 $reqExamens->execute([$id_etu]);
-
 $examens = $reqExamens->fetchAll(PDO::FETCH_ASSOC);
 
-
-// Nombre d'examens à venir
+/* Nombre d'examens à venir */
 $totalExamens = count($examens);
 
-
-// Prochain examen
+/* Prochain examen */
 $prochainExamen = !empty($examens) ? $examens[0] : null;
 
+/* Notifications de l'étudiant */
+$reqNotifications = $bdd->prepare("
+    SELECT
+        COUNT(*) AS total,
+        COALESCE(SUM(CASE WHEN lu = 0 THEN 1 ELSE 0 END), 0) AS non_lues
+    FROM notification
+    WHERE type_destinataire = 'etudiant'
+      AND id_destinataire = ?
+");
+
+$reqNotifications->execute([$id_etu]);
+$statsNotifications = $reqNotifications->fetch(PDO::FETCH_ASSOC);
+
+$totalNotifications = (int) ($statsNotifications["total"] ?? 0);
+$notificationsNonLues = (int) ($statsNotifications["non_lues"] ?? 0);
+
+/* Protection de l'affichage HTML */
+function h($valeur): string
+{
+    return htmlspecialchars((string) ($valeur ?? ""), ENT_QUOTES, "UTF-8");
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="UTF-8">
+    <title>Tableau de bord étudiant</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<title>Tableau de bord étudiant</title>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f9;
+            color: #333;
+        }
 
-<style>
+        /* MENU LATERAL */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 230px;
+            height: 100vh;
+            background: #003366;
+            padding: 25px 15px;
+            overflow-y: auto;
+        }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+        .sidebar h2 {
+            color: white;
+            text-align: center;
+            font-size: 21px;
+            margin-bottom: 35px;
+        }
 
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: #f4f6f9;
-    color: #333;
-}
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 14px 12px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
 
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: #0055aa;
+        }
 
-/* MENU LATERAL */
+        .sidebar .logout {
+            margin-top: 30px;
+            background: #7f1d1d;
+        }
 
-.sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 230px;
-    height: 100vh;
-    background: #003366;
-    padding: 25px 15px;
-    overflow-y: auto;
-}
+        .sidebar .logout:hover {
+            background: #a52a2a;
+        }
 
-.sidebar h2 {
-    color: white;
-    text-align: center;
-    font-size: 21px;
-    margin-bottom: 35px;
-}
+        .badge-menu {
+            display: inline-block;
+            min-width: 23px;
+            padding: 3px 7px;
+            margin-left: 5px;
+            background: #d4a72c;
+            color: #003366;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
 
-.sidebar a {
-    display: block;
-    color: white;
-    text-decoration: none;
-    padding: 14px 12px;
-    margin-bottom: 8px;
-    border-radius: 5px;
-    transition: background 0.2s;
-}
+        /* CONTENU PRINCIPAL */
+        .main {
+            margin-left: 230px;
+            padding: 30px;
+        }
 
-.sidebar a:hover,
-.sidebar a.active {
-    background: #0055aa;
-}
+        .header {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 25px;
+        }
 
-.sidebar .logout {
-    margin-top: 30px;
-    background: #7f1d1d;
-}
+        .header h1 {
+            color: #003366;
+            margin-bottom: 10px;
+            font-size: 26px;
+        }
 
-.sidebar .logout:hover {
-    background: #a52a2a;
-}
+        .header p {
+            color: #666;
+            line-height: 1.7;
+            overflow-wrap: anywhere;
+        }
 
+        /* CARTES STATISTIQUES */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
 
-/* CONTENU PRINCIPAL */
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-left: 5px solid #003366;
+            min-width: 0;
+        }
 
-.main {
-    margin-left: 230px;
-    padding: 30px;
-}
+        .card h3 {
+            color: #666;
+            font-size: 15px;
+            font-weight: normal;
+            margin-bottom: 12px;
+        }
 
-.header {
-    background: white;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    margin-bottom: 25px;
-}
+        .card .number {
+            font-size: 30px;
+            font-weight: bold;
+            color: #003366;
+        }
 
-.header h1 {
-    color: #003366;
-    margin-bottom: 10px;
-    font-size: 26px;
-}
+        .card .detail {
+            color: #555;
+            line-height: 1.7;
+            margin-top: 8px;
+        }
 
-.header p {
-    color: #666;
-    line-height: 1.7;
-}
+        .card-notification {
+            border-left-color: #d4a72c;
+        }
 
+        /* TABLEAU */
+        .section {
+            background: white;
+            padding: 24px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 25px;
+        }
 
-/* CARTES STATISTIQUES */
+        .section h2 {
+            color: #003366;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
 
-.cards {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
-    margin-bottom: 25px;
-}
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
 
-.card {
-    background: white;
-    padding: 24px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    border-left: 5px solid #003366;
-}
+        th,
+        td {
+            padding: 13px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
 
-.card h3 {
-    color: #666;
-    font-size: 15px;
-    font-weight: normal;
-    margin-bottom: 12px;
-}
+        th {
+            background: #003366;
+            color: white;
+        }
 
-.card .number {
-    font-size: 30px;
-    font-weight: bold;
-    color: #003366;
-}
+        .empty {
+            text-align: center;
+            color: #777;
+            padding: 25px;
+        }
 
-.card .detail {
-    color: #555;
-    line-height: 1.7;
-    margin-top: 8px;
-}
+        .button {
+            display: inline-block;
+            padding: 11px 18px;
+            background: #003366;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
 
+        .button:hover {
+            background: #0055aa;
+        }
 
-/* TABLEAU */
+        /* RESPONSIVE */
+        @media (max-width: 800px) {
+            .sidebar {
+                width: 190px;
+            }
 
-.section {
-    background: white;
-    padding: 24px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    margin-bottom: 25px;
-}
+            .main {
+                margin-left: 190px;
+                padding: 20px;
+            }
 
-.section h2 {
-    color: #003366;
-    font-size: 20px;
-    margin-bottom: 20px;
-}
+            .cards {
+                grid-template-columns: 1fr;
+            }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
 
-th,
-td {
-    padding: 13px;
-    border: 1px solid #ddd;
-    text-align: left;
-}
+        @media (max-width: 550px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
 
-th {
-    background: #003366;
-    color: white;
-}
+            .sidebar h2 {
+                margin-bottom: 15px;
+            }
 
-.empty {
-    text-align: center;
-    color: #777;
-    padding: 25px;
-}
+            .main {
+                margin-left: 0;
+                padding: 15px;
+            }
 
-.button {
-    display: inline-block;
-    padding: 11px 18px;
-    background: #003366;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    margin-top: 15px;
-}
-
-.button:hover {
-    background: #0055aa;
-}
-
-
-/* RESPONSIVE */
-
-@media (max-width: 800px) {
-
-    .sidebar {
-        width: 190px;
-    }
-
-    .main {
-        margin-left: 190px;
-        padding: 20px;
-    }
-
-    .cards {
-        grid-template-columns: 1fr;
-    }
-
-    table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
-}
-
-@media (max-width: 550px) {
-
-    .sidebar {
-        position: relative;
-        width: 100%;
-        height: auto;
-    }
-
-    .sidebar h2 {
-        margin-bottom: 15px;
-    }
-
-    .main {
-        margin-left: 0;
-        padding: 15px;
-    }
-
-    .header h1 {
-        font-size: 22px;
-    }
-}
-
-</style>
-
+            .header h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-
 <!-- MENU LATERAL -->
-
 <aside class="sidebar">
 
     <h2>Espace étudiant</h2>
 
     <a href="espace_etu.php" class="active">
         Tableau de bord
+    </a>
+
+    <a href="mes_notifications.php">
+        Mes notifications
+        <?php if ($notificationsNonLues > 0): ?>
+            <span class="badge-menu">
+                <?= $notificationsNonLues ?>
+            </span>
+        <?php endif; ?>
     </a>
 
     <a href="mes_camarades.php">
@@ -372,20 +390,16 @@ th {
 
 </aside>
 
-
 <!-- CONTENU PRINCIPAL -->
-
 <main class="main">
 
-
     <!-- BIENVENUE -->
-
     <section class="header">
 
         <h1>
             Bienvenue,
-            <?= htmlspecialchars($etu["prenom_etu"]) ?>
-            <?= htmlspecialchars($etu["nom_etu"]) ?>
+            <?= h($etu["prenom_etu"]) ?>
+            <?= h($etu["nom_etu"]) ?>
         </h1>
 
         <p>
@@ -394,27 +408,23 @@ th {
 
         <p>
             <strong>Login :</strong>
-            <?= htmlspecialchars($etu["login"]) ?>
+            <?= h($etu["login"]) ?>
             &nbsp; | &nbsp;
 
             <strong>Faculté :</strong>
-            <?= htmlspecialchars($etu["nom_fac"]) ?>
+            <?= h($etu["nom_fac"]) ?>
             &nbsp; | &nbsp;
 
             <strong>Niveau :</strong>
-            <?= htmlspecialchars($etu["nom_niveau"]) ?>
+            <?= h($etu["nom_niveau"]) ?>
         </p>
 
     </section>
 
-
     <!-- STATISTIQUES -->
-
     <section class="cards">
 
-
         <div class="card">
-
             <h3>Mes examens à venir</h3>
 
             <div class="number">
@@ -424,12 +434,9 @@ th {
             <a href="mes_affectations.php" class="button">
                 Voir mes examens
             </a>
-
         </div>
 
-
         <div class="card">
-
             <h3>Prochain examen</h3>
 
             <?php if ($prochainExamen): ?>
@@ -437,25 +444,25 @@ th {
                 <div class="detail">
 
                     <strong>
-                        <?= htmlspecialchars($prochainExamen["nom_cours"]) ?>
+                        <?= h($prochainExamen["nom_cours"]) ?>
                     </strong>
 
                     <br>
 
                     Date :
-                    <?= htmlspecialchars($prochainExamen["date_exam"]) ?>
+                    <?= h($prochainExamen["date_exam"]) ?>
 
                     <br>
 
                     Heure :
-                    <?= htmlspecialchars($prochainExamen["heure_debut"]) ?>
+                    <?= h($prochainExamen["heure_debut"]) ?>
                     -
-                    <?= htmlspecialchars($prochainExamen["heure_fin"]) ?>
+                    <?= h($prochainExamen["heure_fin"]) ?>
 
                     <br>
 
                     Salle :
-                    <?= htmlspecialchars($prochainExamen["nom_salle"]) ?>
+                    <?= h($prochainExamen["nom_salle"]) ?>
 
                 </div>
 
@@ -466,21 +473,32 @@ th {
                 </div>
 
             <?php endif; ?>
-
         </div>
 
+        <div class="card card-notification">
+            <h3>Notifications non lues</h3>
+
+            <div class="number">
+                <?= $notificationsNonLues ?>
+            </div>
+
+            <div class="detail">
+                <?= $totalNotifications ?> notification(s) au total.
+            </div>
+
+            <a href="mes_notifications.php" class="button">
+                Consulter mes notifications
+            </a>
+        </div>
 
     </section>
 
-
     <!-- INFORMATIONS SUR LES EXAMENS -->
-
     <section class="section">
 
         <h2>Mes prochains examens</h2>
 
         <table>
-
             <thead>
                 <tr>
                     <th>Cours</th>
@@ -498,27 +516,11 @@ th {
                 <?php foreach ($examens as $examen): ?>
 
                     <tr>
-
-                        <td>
-                            <?= htmlspecialchars($examen["nom_cours"]) ?>
-                        </td>
-
-                        <td>
-                            <?= htmlspecialchars($examen["date_exam"]) ?>
-                        </td>
-
-                        <td>
-                            <?= htmlspecialchars($examen["heure_debut"]) ?>
-                        </td>
-
-                        <td>
-                            <?= htmlspecialchars($examen["heure_fin"]) ?>
-                        </td>
-
-                        <td>
-                            <?= htmlspecialchars($examen["nom_salle"]) ?>
-                        </td>
-
+                        <td><?= h($examen["nom_cours"]) ?></td>
+                        <td><?= h($examen["date_exam"]) ?></td>
+                        <td><?= h($examen["heure_debut"]) ?></td>
+                        <td><?= h($examen["heure_fin"]) ?></td>
+                        <td><?= h($examen["nom_salle"]) ?></td>
                     </tr>
 
                 <?php endforeach; ?>
@@ -534,7 +536,6 @@ th {
             <?php endif; ?>
 
             </tbody>
-
         </table>
 
         <a href="mes_affectations.php" class="button">
@@ -543,10 +544,8 @@ th {
 
     </section>
 
-
 </main>
 
 </body>
-
 </html>
 

@@ -13,7 +13,7 @@ if (
 /* Connexion à la base de données */
 require_once __DIR__ . "/connexionDB.php";
 
-/* Déconnexion automatique après 5 minutes d'inactivité */
+/* Déconnexion automatique après 5 minutes */
 $temps_max = 300;
 
 if (isset($_SESSION["dernier_acces"])) {
@@ -30,26 +30,26 @@ $_SESSION["dernier_acces"] = time();
 /* Fonction de sécurisation */
 function e($valeur)
 {
-    return htmlspecialchars((string) $valeur, ENT_QUOTES, "UTF-8");
+    return htmlspecialchars((string)$valeur, ENT_QUOTES, "UTF-8");
 }
 
-/* Récupération des statistiques */
+/* Statistiques */
 try {
-    $total_etudiants = (int) $bdd
-        ->query("SELECT COUNT(*) FROM etudiant")
-        ->fetchColumn();
+    $total_etudiants = (int)$bdd->query(
+        "SELECT COUNT(*) FROM etudiant"
+    )->fetchColumn();
 
-    $total_salles = (int) $bdd
-        ->query("SELECT COUNT(*) FROM salle")
-        ->fetchColumn();
+    $total_salles = (int)$bdd->query(
+        "SELECT COUNT(*) FROM salle"
+    )->fetchColumn();
 
-    $total_surveillants = (int) $bdd
-        ->query("SELECT COUNT(*) FROM surveillant")
-        ->fetchColumn();
+    $total_surveillants = (int)$bdd->query(
+        "SELECT COUNT(*) FROM surveillant"
+    )->fetchColumn();
 
-    $total_affectations = (int) $bdd
-        ->query("SELECT COUNT(*) FROM affectation")
-        ->fetchColumn();
+    $total_affectations = (int)$bdd->query(
+        "SELECT COUNT(*) FROM affectation"
+    )->fetchColumn();
 
 } catch (PDOException $ex) {
     $total_etudiants = 0;
@@ -58,24 +58,25 @@ try {
     $total_affectations = 0;
 }
 
-/* Date et heures utilisées pour les deux disponibilités */
+/* Date et heures pour les disponibilités */
 $date_disponibilite = $_GET["date_exam"] ?? date("Y-m-d");
 $heure_debut = $_GET["heure_debut"] ?? "08:00";
 $heure_fin = $_GET["heure_fin"] ?? "10:00";
 
-/* Vérification des valeurs reçues */
+/* Vérification de la date */
 if (
     !is_string($date_disponibilite) ||
     !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_disponibilite) ||
     !checkdate(
-        (int) substr($date_disponibilite, 5, 2),
-        (int) substr($date_disponibilite, 8, 2),
-        (int) substr($date_disponibilite, 0, 4)
+        (int)substr($date_disponibilite, 5, 2),
+        (int)substr($date_disponibilite, 8, 2),
+        (int)substr($date_disponibilite, 0, 4)
     )
 ) {
     $date_disponibilite = date("Y-m-d");
 }
 
+/* Vérification des heures */
 if (
     !is_string($heure_debut) ||
     !preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $heure_debut)
@@ -90,7 +91,7 @@ if (
     $heure_fin = "10:00";
 }
 
-/* Initialisation des disponibilités */
+/* Initialisation */
 $salles_disponibilite = [];
 $surveillants_disponibilite = [];
 
@@ -107,7 +108,7 @@ if ($heure_debut >= $heure_fin) {
 
 } else {
 
-    /* Disponibilité des salles */
+    /* DISPONIBILITÉ DES SALLES */
     try {
         $sql_disponibilite = "
             SELECT
@@ -138,15 +139,16 @@ if ($heure_debut >= $heure_fin) {
             ":heure_fin" => $heure_fin
         ]);
 
-        $salles_disponibilite =
-            $stmt_disponibilite->fetchAll(PDO::FETCH_ASSOC);
+        $salles_disponibilite = $stmt_disponibilite->fetchAll(
+            PDO::FETCH_ASSOC
+        );
 
     } catch (PDOException $ex) {
         $erreur_disponibilite =
             "Impossible de récupérer la disponibilité des salles.";
     }
 
-    /* Disponibilité des surveillants */
+    /* DISPONIBILITÉ DES SURVEILLANTS */
     try {
         $sql_surv = "
             SELECT
@@ -177,8 +179,9 @@ if ($heure_debut >= $heure_fin) {
             ":heure_fin" => $heure_fin
         ]);
 
-        $surveillants_disponibilite =
-            $stmt_surv->fetchAll(PDO::FETCH_ASSOC);
+        $surveillants_disponibilite = $stmt_surv->fetchAll(
+            PDO::FETCH_ASSOC
+        );
 
     } catch (PDOException $ex) {
         $erreur_surv =
@@ -186,8 +189,9 @@ if ($heure_debut >= $heure_fin) {
     }
 }
 
-/* Liens des cartes Accès rapides */
+/* GROUPES D'ACCÈS RAPIDES */
 $groupes = [
+
     "Étudiants" => [
         ["Ajouter un étudiant", "ajouter_etu.php"],
         ["Afficher les étudiants", "afficher_etu.php"],
@@ -211,14 +215,13 @@ $groupes = [
 
     "Surveillants" => [
         ["Ajouter un surveillant", "ajouter_sur.php"],
-        ["Afficher les surveillants", "afficher_sur.php"],
-        ["Voir la disponibilité des surveillants", "gerer_disponibilite_surv.php"]
+        ["Afficher les surveillants", "afficher_sur.php"]
     ],
 
     "Affectations" => [
         ["Ajouter une affectation", "ajouter_affectation.php"],
         ["Afficher les affectations", "afficher_affectation_admin.php"],
-        ["Gérer la disponibilité des surveillants", "gerer_disponibilite_surv.php"],
+        ["Gérer les disponibilités des surveillants", "gerer_disponibilite_surv.php"],
         ["Surveillants affectés", "surveillants_affectes.php"],
         ["Étudiants par salle", "consulter_etudiants_salle.php"],
         ["Rechercher une affectation", "recherche_affectation.php"],
@@ -230,9 +233,21 @@ $groupes = [
         ["Afficher les documents", "afficher_documents.php"]
     ],
 
+    "Communication" => [
+        ["Chat en temps réel", "chat_admin.php"]
+    ],
+
+    "Notifications par e-mail" => [
+        ["Créer un événement et notifier les destinataires", "creer_evenement.php"],
+        ["Consulter l'historique des notifications", "historique_notifications.php"]
+    ],
+
     "Rapports et historique" => [
         ["Rapports PDF", "rapports.php"],
+        ["Rapports personnalisés", "rapports_personnalises.php"],
         ["Export Excel", "export_excel.php"],
+        ["Analyse comparative", "analyse_comparative.php"],
+        ["Prévisions statistiques", "previsions_statistiques.php"],
         ["Historique des connexions", "admin_connexions.php"],
         ["Journal des activités", "historique_activites.php"],
         ["Archives", "afficher_archives.php"],
@@ -263,68 +278,9 @@ $groupes = [
             color: #263445;
         }
 
-        /* MENU LATÉRAL */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 230px;
-            height: 100vh;
-            background: #003366;
-            padding-top: 20px;
-            overflow-y: auto;
-            z-index: 1000;
-        }
-
-        .sidebar h2 {
-            color: white;
-            text-align: center;
-            font-size: 21px;
-            margin: 0 10px 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .sidebar a {
-            display: block;
-            color: white;
-            text-decoration: none;
-            padding: 12px 18px;
-            font-size: 14px;
-            transition: 0.3s;
-        }
-
-        .sidebar a:hover,
-        .sidebar a.active {
-            background: #ffd700;
-            color: #003366;
-        }
-
-        .sidebar .dropdown {
-            position: relative;
-        }
-
-        .sidebar .dropdown-title {
-            cursor: pointer;
-        }
-
-        .sidebar .dropdown-content {
-            display: none;
-            background: #002244;
-        }
-
-        .sidebar .dropdown-content a {
-            padding-left: 35px;
-            font-size: 13px;
-        }
-
-        .sidebar .dropdown:hover .dropdown-content {
-            display: block;
-        }
-
         /* CONTENU PRINCIPAL */
         .main {
-            margin-left: 230px;
+            margin-left: 0;
             padding: 28px;
             min-height: 100vh;
         }
@@ -393,17 +349,93 @@ $groupes = [
             font-weight: bold;
         }
 
-        /* DISPONIBILITÉS */
+        /* TITRES */
         .section-title {
             color: #003366;
             font-size: 21px;
             margin: 0 0 18px;
         }
 
+        /* ACCÈS RAPIDES */
+        .quick-access {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 32px;
+            align-items: start;
+        }
+
+        .quick-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .quick-card summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 20px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #003366;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quick-card summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .quick-card summary::after {
+            content: "+";
+            font-size: 22px;
+            color: #b38b00;
+        }
+
+        .quick-card[open] summary::after {
+            content: "−";
+        }
+
+        .quick-card summary:hover {
+            background: #f0f5fa;
+        }
+
+        .quick-links {
+            padding: 0 20px 18px;
+            border-top: 1px solid #edf0f4;
+        }
+
+        .quick-links a {
+            display: block;
+            color: #40546b;
+            text-decoration: none;
+            padding: 10px 0;
+            border-bottom: 1px solid #edf0f4;
+            font-size: 13px;
+        }
+
+        .quick-links a:last-child {
+            border-bottom: none;
+        }
+
+        .quick-links a:hover {
+            color: #003366;
+            padding-left: 5px;
+        }
+
+        .quick-links a.chat-link {
+            color: #003366;
+            font-weight: bold;
+        }
+
+        /* SECTIONS DE DISPONIBILITÉ */
         .availability-section {
             background: white;
             padding: 24px;
-            margin-bottom: 32px;
+            margin-bottom: 25px;
             border-radius: 12px;
             box-shadow: 0 3px 12px rgba(0,0,0,0.05);
         }
@@ -513,73 +545,6 @@ $groupes = [
             padding: 15px 0;
         }
 
-        /* ACCÈS RAPIDES */
-        .quick-access {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 18px;
-        }
-
-        .quick-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.05);
-            overflow: hidden;
-        }
-
-        .quick-card summary {
-            list-style: none;
-            cursor: pointer;
-            padding: 20px;
-            font-size: 15px;
-            font-weight: bold;
-            color: #003366;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .quick-card summary::-webkit-details-marker {
-            display: none;
-        }
-
-        .quick-card summary::after {
-            content: "+";
-            font-size: 22px;
-            color: #b38b00;
-        }
-
-        .quick-card[open] summary::after {
-            content: "−";
-        }
-
-        .quick-card summary:hover {
-            background: #f0f5fa;
-        }
-
-        .quick-links {
-            padding: 0 20px 18px;
-            border-top: 1px solid #edf0f4;
-        }
-
-        .quick-links a {
-            display: block;
-            color: #40546b;
-            text-decoration: none;
-            padding: 10px 0;
-            border-bottom: 1px solid #edf0f4;
-            font-size: 13px;
-        }
-
-        .quick-links a:last-child {
-            border-bottom: none;
-        }
-
-        .quick-links a:hover {
-            color: #003366;
-            padding-left: 5px;
-        }
-
         .footer {
             margin-top: 35px;
             padding: 18px 0;
@@ -601,13 +566,6 @@ $groupes = [
         }
 
         @media (max-width: 700px) {
-            .sidebar {
-                position: relative;
-                width: 100%;
-                height: auto;
-                max-height: 320px;
-            }
-
             .main {
                 margin-left: 0;
                 padding: 18px;
@@ -635,90 +593,7 @@ $groupes = [
 
 <body>
 
-<!-- MENU LATÉRAL -->
-<aside class="sidebar">
-
-    <h2>MENU</h2>
-
-    <a href="dashboard.php" class="active">Dashboard</a>
-
-    <div class="dropdown">
-        <a href="#">Étudiants</a>
-        <div class="dropdown-content">
-            <a href="ajouter_etu.php">Ajouter</a>
-            <a href="afficher_etu.php">Afficher</a>
-            <a href="rapport_etudiants.php">Rapport</a>
-        </div>
-    </div>
-
-    <div class="dropdown">
-        <a href="#">Cours</a>
-        <div class="dropdown-content">
-            <a href="ajouter_cours.php">Ajouter</a>
-            <a href="afficher_cours.php">Afficher</a>
-        </div>
-    </div>
-
-    <div class="dropdown">
-        <a href="#">Facultés</a>
-        <div class="dropdown-content">
-            <a href="ajouter_fac.php">Ajouter</a>
-            <a href="afficher_fac.php">Afficher</a>
-        </div>
-    </div>
-
-    <div class="dropdown">
-        <a href="#">Salles</a>
-        <div class="dropdown-content">
-            <a href="ajouter_salle.php">Ajouter</a>
-            <a href="afficher_salle.php">Afficher</a>
-            <a href="disponibilite_salles.php">Disponibilité des salles</a>
-        </div>
-    </div>
-
-    <div class="dropdown">
-        <a href="#">Surveillants</a>
-        <div class="dropdown-content">
-            <a href="ajouter_sur.php">Ajouter</a>
-            <a href="afficher_sur.php">Afficher</a>
-            <a href="gerer_disponibilite_surv.php">Disponibilité des surveillants</a>
-        </div>
-    </div>
-
-    <div class="dropdown">
-        <a href="#">Affectations</a>
-        <div class="dropdown-content">
-            <a href="ajouter_affectation.php">Affectations</a>
-            <a href="afficher_affectation_admin.php">Affichage des affectations</a>
-            <a href="gerer_disponibilite_surv.php">Disponibilité des surveillants</a>
-            <a href="surveillants_affectes.php">Liste des surveillants affectés</a>
-            <a href="consulter_etudiants_salle.php">Étudiants par salle</a>
-            <a href="recherche_affectation.php">Rechercher les affectations</a>
-            <a href="rapport_affectations.php">Rapport d'affectation</a>
-        </div>
-    </div>
-
-    <div class="dropdown">
-        <a href="#">Documents</a>
-        <div class="dropdown-content">
-            <a href="ajouter_document.php">Partager un document</a>
-            <a href="afficher_documents.php">Liste des documents partagés</a>
-        </div>
-    </div>
-
-    <a href="rapports.php">Rapports PDF</a>
-	<a href="rapports_personnalises.php">Rapport personnalise</a>
-    <a href="export_excel.php">Export Excel</a>
-	<a href="analyse_comparative.php">Comparaison</a>
-	<a href="previsions_statistiques.php"> Previsions</a>
-    <a href="admin_connexions.php">Historique de connexion</a>
-    <a href="tri_affectation.php">Tri des affectations</a>
-    <a href="filtrage_affectation.php">Filtrer les affectations</a>
-    <a href="historique_activites.php">Journal des activités</a>
-    <a href="afficher_archives.php">Archivage</a>
-    <a href="deconnexion.php">Déconnexion</a>
-
-</aside>
+<?php include __DIR__ . "/menu_principal.php"; ?>
 
 <!-- CONTENU PRINCIPAL -->
 <main class="main">
@@ -759,10 +634,9 @@ $groupes = [
 
     </section>
 
-    
-
-    <!-- ACCÈS RAPIDES -->
+    <!-- ACCÈS RAPIDES : GROUPES REPLIABLES -->
     <section>
+
         <h2 class="section-title">Accès rapides</h2>
 
         <div class="quick-access">
@@ -777,7 +651,10 @@ $groupes = [
 
                         <?php foreach ($liens as $lien): ?>
 
-                            <a href="<?= e($lien[1]) ?>">
+                            <a
+                                href="<?= e($lien[1]) ?>"
+                                <?= $lien[1] === "chat_admin.php" ? 'class="chat-link"' : '' ?>
+                            >
                                 <?= e($lien[0]) ?>
                             </a>
 
@@ -790,9 +667,10 @@ $groupes = [
             <?php endforeach; ?>
 
         </div>
+
     </section>
-	
-	<!-- FILTRE COMMUN AUX DEUX DISPONIBILITÉS -->
+
+    <!-- FILTRE COMMUN AUX DEUX DISPONIBILITÉS -->
     <section class="availability-section">
 
         <h2 class="section-title">Vérifier les disponibilités</h2>
@@ -838,8 +716,6 @@ $groupes = [
 
     </section>
 
-	
-	
     <!-- DISPONIBILITÉ DES SALLES -->
     <section class="availability-section">
 
@@ -877,22 +753,13 @@ $groupes = [
 
                             <tr>
                                 <td><?= e($salle["nom_salle"]) ?></td>
-
                                 <td><?= e($salle["capacite"]) ?></td>
 
                                 <td>
                                     <?php if ($salle["disponibilite"] === "Disponible"): ?>
-
-                                        <span class="status available">
-                                            Disponible
-                                        </span>
-
+                                        <span class="status available">Disponible</span>
                                     <?php else: ?>
-
-                                        <span class="status occupied">
-                                            Occupée
-                                        </span>
-
+                                        <span class="status occupied">Occupée</span>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -946,22 +813,13 @@ $groupes = [
 
                             <tr>
                                 <td><?= e($surv["nom_surv"]) ?></td>
-
                                 <td><?= e($surv["prenom_surv"]) ?></td>
 
                                 <td>
                                     <?php if ($surv["disponibilite"] === "Disponible"): ?>
-
-                                        <span class="status available">
-                                            Disponible
-                                        </span>
-
+                                        <span class="status available">Disponible</span>
                                     <?php else: ?>
-
-                                        <span class="status occupied">
-                                            Occupé
-                                        </span>
-
+                                        <span class="status occupied">Occupé</span>
                                     <?php endif; ?>
                                 </td>
                             </tr>

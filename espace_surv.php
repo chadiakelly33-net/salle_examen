@@ -2,25 +2,7 @@
 
 session_start();
 
-require_once __DIR__ . "/connexionDB.php";
-
-// Durée maximale d'inactivité : 5 minutes
-$timeout = 300;
-
-// Vérifier le délai d'inactivité
-if (isset($_SESSION["last_activity"])) {
-
-    if (time() - $_SESSION["last_activity"] > $timeout) {
-
-        session_unset();
-        session_destroy();
-
-        header("Location: login_surv.php?timeout=1");
-        exit();
-    }
-}
-
-// Vérifier que le surveillant est connecté
+/* Vérifier que le surveillant est connecté */
 if (
     !isset($_SESSION["id_surv"]) ||
     !isset($_SESSION["role"]) ||
@@ -30,18 +12,35 @@ if (
     exit();
 }
 
-// Actualiser l'activité de la session
+/* Connexion à la base de données */
+require_once __DIR__ . "/connexionDB.php";
+
+/* Durée maximale d'inactivité : 5 minutes */
+$timeout = 300;
+
+if (isset($_SESSION["last_activity"])) {
+    if (time() - $_SESSION["last_activity"] > $timeout) {
+        session_unset();
+        session_destroy();
+
+        header("Location: login_surv.php?timeout=1");
+        exit();
+    }
+}
+
+/* Actualiser l'activité */
 $_SESSION["last_activity"] = time();
 
-// Récupérer les informations du surveillant
+$id_surv = (int) $_SESSION["id_surv"];
+
+/* Informations du surveillant */
 $req = $bdd->prepare("
     SELECT nom_surv, prenom_surv, login
     FROM surveillant
     WHERE id_surv = ?
 ");
 
-$req->execute([$_SESSION["id_surv"]]);
-
+$req->execute([$id_surv]);
 $surv = $req->fetch(PDO::FETCH_ASSOC);
 
 if (!$surv) {
@@ -52,7 +51,7 @@ if (!$surv) {
     exit();
 }
 
-// Récupérer les affectations actuelles et futures
+/* Affectations actuelles et futures */
 $sql = "
     SELECT
         a.id_affectation,
@@ -64,31 +63,53 @@ $sql = "
         a.heure_debut,
         a.heure_fin
     FROM affectation a
-
     INNER JOIN cours c
         ON a.id_cours = c.id_cours
-
     INNER JOIN salle s
         ON a.id_salle = s.id_salle
-
     LEFT JOIN faculte f
         ON c.id_fac = f.id_fac
-
     LEFT JOIN niveau_etude n
         ON c.id_niveau = n.id_niveau
-
     WHERE a.id_surv = ?
       AND a.date_exam IS NOT NULL
       AND a.heure_fin IS NOT NULL
       AND CONCAT(a.date_exam, ' ', a.heure_fin) >= NOW()
-
     ORDER BY a.date_exam ASC, a.heure_debut ASC
 ";
 
-$req = $bdd->prepare($sql);
-$req->execute([$_SESSION["id_surv"]]);
+$reqAffectations = $bdd->prepare($sql);
+$reqAffectations->execute([$id_surv]);
+$affectations = $reqAffectations->fetchAll(PDO::FETCH_ASSOC);
 
-$affectations = $req->fetchAll(PDO::FETCH_ASSOC);
+/* Statistiques des notifications du surveillant */
+$reqNotifications = $bdd->prepare("
+    SELECT
+        COUNT(*) AS total,
+        COALESCE(
+            SUM(CASE WHEN lu = 0 THEN 1 ELSE 0 END),
+            0
+        ) AS non_lues
+    FROM notification
+    WHERE type_destinataire = 'surveillant'
+      AND id_destinataire = ?
+");
+
+$reqNotifications->execute([$id_surv]);
+$statsNotifications = $reqNotifications->fetch(PDO::FETCH_ASSOC);
+
+$totalNotifications = (int) ($statsNotifications["total"] ?? 0);
+$notificationsNonLues = (int) ($statsNotifications["non_lues"] ?? 0);
+
+/* Sécuriser l'affichage */
+function h($valeur): string
+{
+    return htmlspecialchars(
+        (string) ($valeur ?? ""),
+        ENT_QUOTES,
+        "UTF-8"
+    );
+}
 
 ?>
 
@@ -173,6 +194,19 @@ $affectations = $req->fetchAll(PDO::FETCH_ASSOC);
             background: #922b21;
         }
 
+        .badge-menu {
+            display: inline-block;
+            min-width: 23px;
+            padding: 3px 7px;
+            margin-left: 5px;
+            background: #f1c40f;
+            color: #003366;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+
         /* Contenu principal */
         .main {
             margin-left: 230px;
@@ -211,6 +245,7 @@ $affectations = $req->fetchAll(PDO::FETCH_ASSOC);
             border-radius: 10px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             border-left: 5px solid #355c7d;
+            min-width: 0;
         }
 
         .stat-card h4 {
@@ -223,6 +258,10 @@ $affectations = $req->fetchAll(PDO::FETCH_ASSOC);
             font-size: 28px;
             font-weight: bold;
             color: #355c7d;
+        }
+
+        .notification-card {
+            border-left-color: #d4a72c;
         }
 
         /* Tableau des affectations */
@@ -349,6 +388,16 @@ $affectations = $req->fetchAll(PDO::FETCH_ASSOC);
             Tableau de bord
         </a>
 
+        <a href="mes_notifications_surv.php">
+            Mes notifications
+
+            <?php if ($notificationsNonLues > 0): ?>
+                <span class="badge-menu">
+                    <?= $notificationsNonLues ?>
+                </span>
+            <?php endif; ?>
+        </a>
+
         <a href="profil_surv.php">
             Mon profil
         </a>
@@ -387,14 +436,13 @@ $affectations = $req->fetchAll(PDO::FETCH_ASSOC);
 
             <h3>
                 Bienvenue
-                <?= htmlspecialchars(
-                    $surv["prenom_surv"] . " " . $surv["nom_surv"],
-                    ENT_QUOTES,
-                    "UTF-8"
-                ) ?>
+                <?= h($surv["prenom_surv"]) ?>
+                <?= h($surv["nom_surv"]) ?>
             </h3>
 
-            
+            <p>
+                Retrouvez ici vos affectations et les informations qui vous sont destinées.
+            </p>
 
         </section>
 
@@ -403,6 +451,7 @@ $affectations = $req->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="stat-card">
                 <h4>Mes affectations à venir</h4>
+
                 <div class="number">
                     <?= count($affectations) ?>
                 </div>
@@ -410,9 +459,26 @@ $affectations = $req->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="stat-card">
                 <h4>Mon compte</h4>
+
                 <div class="number" style="font-size: 19px;">
                     Actif
                 </div>
+            </div>
+
+            <div class="stat-card notification-card">
+                <h4>Notifications non lues</h4>
+
+                <div class="number">
+                    <?= $notificationsNonLues ?>
+                </div>
+
+                <p style="margin-top: 8px;">
+                    <?= $totalNotifications ?> notification(s) au total.
+                </p>
+
+                <a href="mes_notifications_surv.php" class="btn">
+                    Consulter mes notifications
+                </a>
             </div>
 
         </section>
@@ -446,61 +512,19 @@ $affectations = $req->fetchAll(PDO::FETCH_ASSOC);
 
                                 <tr>
 
-                                    <td>
-                                        <?= htmlspecialchars(
-                                            $a["nom_cours"] ?? "",
-                                            ENT_QUOTES,
-                                            "UTF-8"
-                                        ) ?>
-                                    </td>
+                                    <td><?= h($a["nom_cours"]) ?></td>
 
-                                    <td>
-                                        <?= htmlspecialchars(
-                                            $a["nom_fac"] ?? "Non renseignée",
-                                            ENT_QUOTES,
-                                            "UTF-8"
-                                        ) ?>
-                                    </td>
+                                    <td><?= h($a["nom_fac"] ?? "Non renseignée") ?></td>
 
-                                    <td>
-                                        <?= htmlspecialchars(
-                                            $a["nom_niveau"] ?? "Non renseigné",
-                                            ENT_QUOTES,
-                                            "UTF-8"
-                                        ) ?>
-                                    </td>
+                                    <td><?= h($a["nom_niveau"] ?? "Non renseigné") ?></td>
 
-                                    <td>
-                                        <?= htmlspecialchars(
-                                            $a["nom_salle"] ?? "",
-                                            ENT_QUOTES,
-                                            "UTF-8"
-                                        ) ?>
-                                    </td>
+                                    <td><?= h($a["nom_salle"]) ?></td>
 
-                                    <td>
-                                        <?= htmlspecialchars(
-                                            $a["date_exam"] ?? "",
-                                            ENT_QUOTES,
-                                            "UTF-8"
-                                        ) ?>
-                                    </td>
+                                    <td><?= h($a["date_exam"]) ?></td>
 
-                                    <td>
-                                        <?= htmlspecialchars(
-                                            $a["heure_debut"] ?? "",
-                                            ENT_QUOTES,
-                                            "UTF-8"
-                                        ) ?>
-                                    </td>
+                                    <td><?= h($a["heure_debut"]) ?></td>
 
-                                    <td>
-                                        <?= htmlspecialchars(
-                                            $a["heure_fin"] ?? "",
-                                            ENT_QUOTES,
-                                            "UTF-8"
-                                        ) ?>
-                                    </td>
+                                    <td><?= h($a["heure_fin"]) ?></td>
 
                                 </tr>
 
