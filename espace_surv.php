@@ -369,12 +369,14 @@ function h($valeur): string
                 padding: 15px;
             }
 
-            th, td {
+            th,
+            td {
                 padding: 8px;
                 font-size: 12px;
             }
         }
     </style>
+
 </head>
 
 <body>
@@ -414,6 +416,11 @@ function h($valeur): string
             Mes rapports PDF
         </a>
 
+        <!-- Accès à la page des commentaires -->
+        <a href="commentaires_surv.php">
+            Commentaires
+        </a>
+
         <a href="changer_mdp_surv.php">
             Changer mon mot de passe
         </a>
@@ -450,22 +457,27 @@ function h($valeur): string
         <section class="stats">
 
             <div class="stat-card">
+
                 <h4>Mes affectations à venir</h4>
 
                 <div class="number">
                     <?= count($affectations) ?>
                 </div>
+
             </div>
 
             <div class="stat-card">
+
                 <h4>Mon compte</h4>
 
                 <div class="number" style="font-size: 19px;">
                     Actif
                 </div>
+
             </div>
 
             <div class="stat-card notification-card">
+
                 <h4>Notifications non lues</h4>
 
                 <div class="number">
@@ -479,6 +491,7 @@ function h($valeur): string
                 <a href="mes_notifications_surv.php" class="btn">
                     Consulter mes notifications
                 </a>
+
             </div>
 
         </section>

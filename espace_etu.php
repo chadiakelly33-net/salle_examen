@@ -251,7 +251,7 @@ function h($valeur): string
             border-left-color: #d4a72c;
         }
 
-        /* TABLEAU */
+        /* SECTIONS */
         .section {
             background: white;
             padding: 24px;
@@ -266,6 +266,7 @@ function h($valeur): string
             margin-bottom: 20px;
         }
 
+        /* TABLEAU */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -295,8 +296,10 @@ function h($valeur): string
             background: #003366;
             color: white;
             text-decoration: none;
+            border: none;
             border-radius: 5px;
             margin-top: 15px;
+            cursor: pointer;
         }
 
         .button:hover {
@@ -374,6 +377,10 @@ function h($valeur): string
 
     <a href="mes_affectations.php">
         Mes affectations
+    </a>
+
+    <a href="commentaires_etu.php">
+        Commentaires
     </a>
 
     <a href="documents_partages_etu.php">
@@ -548,4 +555,3 @@ function h($valeur): string
 
 </body>
 </html>
-

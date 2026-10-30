@@ -275,6 +275,7 @@ body {
     </details>
 
     <a href="alertes.php">Alertes automatiques</a>
+	<a href="commentaires_admin.php">Gestion des commentaires</a>
 
     <div class="separator"></div>
 
