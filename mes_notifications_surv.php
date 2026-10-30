@@ -2,8 +2,12 @@
 session_start();
 
 /* Vérifier que le surveillant est connecté */
-if (!isset($_SESSION['id_surv']) || empty($_SESSION['id_surv'])) {
-    header('Location: login_surv.php');
+if (
+    !isset($_SESSION["id_surv"]) ||
+    !isset($_SESSION["role"]) ||
+    $_SESSION["role"] !== "surveillant"
+) {
+    header("Location: login_surv.php");
     exit();
 }
 

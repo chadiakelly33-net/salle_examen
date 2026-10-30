@@ -1,4 +1,5 @@
 <?php
+
 session_start();
 
 // Vérifier que l'utilisateur est un administrateur
@@ -47,6 +48,8 @@ $req = $bdd->prepare($sql);
 $req->execute($params);
 
 $documents = $req->fetchAll(PDO::FETCH_ASSOC);
+require_once __DIR__ . "/../session_timeout.php";
+
 ?>
 
 <!DOCTYPE html>

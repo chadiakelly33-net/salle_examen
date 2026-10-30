@@ -1,4 +1,5 @@
 <?php
+
 session_start();
 if(!isset($_SESSION["id_admin"]) || $_SESSION["role"] != "admin"){
     header("Location: connexion.php");

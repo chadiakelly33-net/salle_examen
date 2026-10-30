@@ -1,6 +1,11 @@
 <?php
+
 session_start();
-if(!isset($_SESSION["id_admin"]) || $_SESSION["role"] != "admin"){
+
+if (
+    !isset($_SESSION["id_admin"]) ||
+    ($_SESSION["role"] ?? "") !== "admin"
+) {
     header("Location: connexion.php");
     exit();
 }
@@ -15,6 +20,8 @@ journal(
     "admin",
     "Consultation de la liste des cours"
 );
+
+require_once __DIR__ . "/../session_timeout.php";
 ?>
 
 

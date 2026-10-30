@@ -1,5 +1,5 @@
 <?php
-
+require_once __DIR__ . "/proteger_admin.php";
 session_start();
 
 include("connexionDB.php");
@@ -184,6 +184,8 @@ print_r($resultats);
 echo "</pre>";
 
 exit();
+
+require_once __DIR__ . "/../session_timeout.php";
 
 ?>
 

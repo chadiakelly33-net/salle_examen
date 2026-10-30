@@ -1,6 +1,11 @@
 <?php
 session_start();
-if(!isset($_SESSION["id_etu"])){
+
+if (
+    !isset($_SESSION["id_etu"]) ||
+    !isset($_SESSION["role"]) ||
+    $_SESSION["role"] !== "etudiant"
+) {
     header("Location: login_etu.php");
     exit();
 }

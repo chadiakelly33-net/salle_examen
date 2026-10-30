@@ -57,7 +57,42 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ((int)$user["compte_bloque"] === 0) {
 
             // Vérification du mot de passe
-            if (password_verify($password, $user["motdepasse"])) {
+            $motDePasseEnregistre = $user["motdepasse"];
+
+            // Vérifier d'abord si le mot de passe est déjà haché
+            $motDePasseValide = password_verify(
+                $password,
+                $motDePasseEnregistre
+            );
+
+            // Si le mot de passe est encore en clair, le vérifier
+            if (
+                !$motDePasseValide &&
+                is_string($motDePasseEnregistre) &&
+                hash_equals($motDePasseEnregistre, $password)
+            ) {
+
+                $motDePasseValide = true;
+
+                // Convertir automatiquement l'ancien mot de passe en hash
+                $nouveauHash = password_hash(
+                    $password,
+                    PASSWORD_DEFAULT
+                );
+
+                $majMotDePasse = $bdd->prepare("
+                    UPDATE etudiant
+                    SET motdepasse = ?
+                    WHERE id_etu = ?
+                ");
+
+                $majMotDePasse->execute([
+                    $nouveauHash,
+                    $user["id_etu"]
+                ]);
+            }
+
+            if ($motDePasseValide) {
 
                 // Réinitialiser les tentatives échouées
                 $reset = $bdd->prepare("

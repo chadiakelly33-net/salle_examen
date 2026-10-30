@@ -1,5 +1,5 @@
 <?php
-
+require_once __DIR__ . "/proteger_admin.php";
 session_start();
 
 if(!isset($_SESSION["id_admin"]) || $_SESSION["role"] != "admin"){
@@ -31,6 +31,8 @@ $req = $bdd->query("
 ");
 
 $logs = $req->fetchAll();
+
+require_once __DIR__ . "/../session_timeout.php";
 
 ?>
 

@@ -7,7 +7,7 @@ if(!isset($_SESSION["id_etu"])){
 
 include("connexionDB.php");
 
-include("connexionDB.php");
+include("menu_etu.php");
 include("journal.php");
 
 

@@ -14,6 +14,8 @@ if(!isset($_SESSION["id_etu"]) ||
 
 ?>
 
+<?php require_once __DIR__ . "/theme.php"; ?>
+
 <html lang="fr">
 
 <head>

@@ -382,6 +382,10 @@ function h($valeur): string
     <a href="commentaires_etu.php">
         Commentaires
     </a>
+	
+	<a href="profil_etu.php">
+        Mon profil
+    </a>
 
     <a href="documents_partages_etu.php">
         Documents partagés

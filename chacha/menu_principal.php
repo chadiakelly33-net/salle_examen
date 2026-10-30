@@ -31,6 +31,8 @@ if (
 $_SESSION["last_activity"] = time();
 ?>
 
+
+
 <style>
 /* Mise en page générale */
 body {
@@ -276,12 +278,16 @@ body {
 
     <a href="alertes.php">Alertes automatiques</a>
 	<a href="commentaires_admin.php">Gestion des commentaires</a>
+	<a href="restaurer_sauvegarde.php">Restauration de sauvegarde</a>
+	<a href="parametres.php">Paramétrage du système</a>
 
     <div class="separator"></div>
 
     <a href="deconnexion.php" class="logout">Déconnexion</a>
 
 </aside>
+
+<?php require_once __DIR__ . "/../theme.php"; ?>
 
 <script>
 document.querySelectorAll(".sidebar details").forEach(function(groupe) {

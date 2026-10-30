@@ -13,8 +13,8 @@ if (
 /* Connexion à la base de données */
 require_once __DIR__ . "/connexionDB.php";
 
-/* Déconnexion automatique après 5 minutes */
-$temps_max = 300;
+/* Déconnexion automatique après 5 minutes 
+$temps_max = 300;*/
 
 if (isset($_SESSION["dernier_acces"])) {
     if (time() - $_SESSION["dernier_acces"] > $temps_max) {
@@ -255,6 +255,8 @@ $groupes = [
         ["Filtrer les affectations", "filtrage_affectation.php"]
     ]
 ];
+
+require_once __DIR__ . "/../session_timeout.php";
 ?>
 
 <!DOCTYPE html>

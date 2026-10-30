@@ -62,6 +62,8 @@ ORDER BY a.date_archivage DESC
 
 $archives = $req->fetchAll();
 
+require_once __DIR__ . "/../session_timeout.php";
+
 ?>
 
 <!DOCTYPE html>

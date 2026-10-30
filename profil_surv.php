@@ -1,4 +1,3 @@
-```php
 <?php
 
 session_start();
@@ -9,13 +8,14 @@ include("journal.php");
 
 // Vérifier connexion surveillant
 
-if(!isset($_SESSION["id_surv"])){
-
+if (
+    !isset($_SESSION["id_surv"]) ||
+    !isset($_SESSION["role"]) ||
+    $_SESSION["role"] !== "surveillant"
+) {
     header("Location: login_surv.php");
     exit();
-
 }
-
 
 $id_surv = $_SESSION["id_surv"];
 
@@ -395,4 +395,4 @@ Retour
 </body>
 
 </html>
-```
+

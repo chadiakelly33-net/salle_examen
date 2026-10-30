@@ -2,13 +2,19 @@
 session_start();
 
 include("connexionDB.php");
+include("menu_etu.php");
 include("journal.php");
 
 // Vérifier la connexion de l'étudiant
-if(!isset($_SESSION["id_etu"])){
+if (
+    !isset($_SESSION["id_etu"]) ||
+    !isset($_SESSION["role"]) ||
+    $_SESSION["role"] !== "etudiant"
+) {
     header("Location: login_etu.php");
     exit();
 }
+
 
 $id_etu = $_SESSION["id_etu"];
 

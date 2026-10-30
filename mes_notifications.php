@@ -9,6 +9,8 @@ if (!isset($_SESSION['id_etu']) || empty($_SESSION['id_etu'])) {
 
 /* Connexion à la base de données */
 require_once __DIR__ . '/connexionDB.php';
+include("menu_etu.php");
+include("journal.php");
 
 $idEtudiant = (int) $_SESSION['id_etu'];
 $notifications = [];
