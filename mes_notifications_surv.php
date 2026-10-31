@@ -96,175 +96,405 @@ foreach ($notifications as $notification) {
     <title>Mes notifications - Surveillant</title>
 
     <style>
-        * {
-            box-sizing: border-box;
-        }
+       /* ==============================
+   STYLE GENERAL
+============================== */
 
-        body {
-            margin: 0;
-            padding: 25px;
-            background: #f4f7fb;
-            color: #243247;
-            font-family: Arial, sans-serif;
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        .conteneur {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f6f9;
+    color: #333;
+    min-height: 100vh;
+}
 
-        .retour {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #003366;
-            text-decoration: none;
-            font-weight: bold;
-        }
+/* ==============================
+   BARRE LATERALE
+============================== */
 
-        .retour:hover {
-            text-decoration: underline;
-        }
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 230px;
+    height: 100vh;
+    background: #003366;
+    padding: 25px 15px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 3px 0 12px rgba(0, 0, 0, 0.12);
+}
 
-        h1 {
-            margin-bottom: 8px;
-            color: #003366;
-        }
+.sidebar h3 {
+    color: white;
+    text-align: center;
+    font-size: 20px;
+    margin-bottom: 35px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
 
-        .description {
-            margin-bottom: 25px;
-            color: #667085;
-        }
+.sidebar a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    color: #e8eef7;
+    padding: 13px 14px;
+    margin-bottom: 8px;
+    border-radius: 7px;
+    font-size: 14px;
+    transition: 0.3s ease;
+}
 
-        .statistiques {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
+.sidebar a:hover,
+.sidebar a.active {
+    background: #d4a72c;
+    color: #003366;
+    font-weight: bold;
+}
 
-        .statistique {
-            flex: 1;
-            min-width: 180px;
-            padding: 20px;
-            background: white;
-            border: 1px solid #e1e7ef;
-            border-radius: 10px;
-        }
+.sidebar a.logout {
+    margin-top: 25px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 18px;
+}
 
-        .statistique span {
-            display: block;
-            margin-bottom: 8px;
-            color: #667085;
-        }
+/* Compteur dans le menu */
 
-        .statistique strong {
-            color: #003366;
-            font-size: 26px;
-        }
+.badge-menu {
+    background: #d4a72c;
+    color: #003366;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+}
 
-        .notification {
-            margin-bottom: 18px;
-            padding: 22px;
-            background: white;
-            border: 1px solid #e1e7ef;
-            border-left: 5px solid #003366;
-            border-radius: 10px;
-        }
+/* ==============================
+   CONTENU PRINCIPAL
+============================== */
 
-        .notification.non-lue {
-            background: #f0f6ff;
-            border-left-color: #d4a72c;
-        }
+.conteneur {
+    max-width: 1100px;
+    margin-left: 230px;
+    padding: 35px 40px;
+}
 
-        .entete-notification {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
+/* Bouton retour */
 
-        .entete-notification h2 {
-            margin: 0;
-            color: #003366;
-            font-size: 19px;
-        }
+.retour {
+    display: inline-block;
+    margin-bottom: 25px;
+    color: #003366;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+}
 
-        .badge {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
+.retour:hover {
+    color: #d4a72c;
+}
 
-        .badge-lue {
-            background: #e4f5e9;
-            color: #176b35;
-        }
+/* Titres */
 
-        .badge-non-lue {
-            background: #fff0c2;
-            color: #805b00;
-        }
+h1 {
+    color: #003366;
+    font-size: 29px;
+    margin-bottom: 10px;
+}
 
-        .message {
-            margin: 15px 0;
-            line-height: 1.7;
-            overflow-wrap: anywhere;
-        }
+.description {
+    color: #667085;
+    margin-bottom: 30px;
+    line-height: 1.6;
+    font-size: 15px;
+}
 
-        .informations {
-            padding-top: 12px;
-            border-top: 1px solid #e8edf3;
-            color: #667085;
-            font-size: 13px;
-            line-height: 1.8;
-        }
+/* ==============================
+   STATISTIQUES
+============================== */
 
-        .bouton {
-            margin-top: 15px;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
-            background: #003366;
-            color: white;
-            cursor: pointer;
-            font-size: 14px;
-        }
+.statistiques {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
 
-        .bouton:hover {
-            background: #064b8e;
-        }
+.statistique {
+    background: white;
+    padding: 24px;
+    border-radius: 10px;
+    border: 1px solid #e5eaf0;
+    border-left: 5px solid #003366;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease;
+}
 
-        .vide,
-        .erreur {
-            padding: 25px;
-            background: white;
-            border-radius: 10px;
-            text-align: center;
-        }
+.statistique:hover {
+    transform: translateY(-3px);
+}
 
-        .erreur {
-            margin-bottom: 20px;
-            color: #a32121;
-            background: #fff0f0;
-        }
+.statistique span {
+    display: block;
+    color: #667085;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
 
-        @media (max-width: 600px) {
-            body {
-                padding: 15px;
-            }
+.statistique strong {
+    display: block;
+    color: #003366;
+    font-size: 30px;
+}
 
-            .notification {
-                padding: 16px;
-            }
-        }
+/* ==============================
+   CARTES NOTIFICATIONS
+============================== */
+
+.notification {
+    background: white;
+    padding: 25px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    border: 1px solid #e5eaf0;
+    border-left: 5px solid #003366;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+    transition: 0.3s ease;
+}
+
+.notification:hover {
+    box-shadow: 0 5px 18px rgba(0,0,0,0.09);
+}
+
+/* Notification non lue */
+
+.notification.non-lue {
+    background: #fffdf6;
+    border-left-color: #d4a72c;
+}
+
+/* En-tête */
+
+.entete-notification {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.entete-notification h2 {
+    color: #003366;
+    font-size: 19px;
+}
+
+/* Badges */
+
+.badge {
+    display: inline-block;
+    padding: 7px 13px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.badge-lue {
+    background: #e4f5e9;
+    color: #176b35;
+}
+
+.badge-non-lue {
+    background: #fff0c2;
+    color: #805b00;
+}
+
+/* Message */
+
+.message {
+    margin: 15px 0 20px;
+    color: #444;
+    line-height: 1.8;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+}
+
+/* Informations */
+
+.informations {
+    padding-top: 15px;
+    border-top: 1px solid #e8edf3;
+    color: #667085;
+    font-size: 13px;
+    line-height: 2;
+}
+
+.informations strong {
+    color: #003366;
+}
+
+/* ==============================
+   BOUTONS
+============================== */
+
+.bouton {
+    margin-top: 18px;
+    padding: 11px 18px;
+    border: none;
+    border-radius: 6px;
+    background: #003366;
+    color: white;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    transition: 0.3s ease;
+}
+
+.bouton:hover {
+    background: #d4a72c;
+    color: #003366;
+}
+
+/* ==============================
+   MESSAGE VIDE ET ERREUR
+============================== */
+
+.vide,
+.erreur {
+    padding: 35px 25px;
+    background: white;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid #e5eaf0;
+}
+
+.vide h2 {
+    color: #003366;
+    margin-bottom: 12px;
+}
+
+.vide p {
+    color: #667085;
+}
+
+.erreur {
+    margin-bottom: 20px;
+    color: #a32121;
+    background: #fff0f0;
+    border-color: #f5caca;
+}
+
+/* ==============================
+   RESPONSIVE
+============================== */
+
+@media (max-width: 850px) {
+
+    .conteneur {
+        padding: 25px;
+    }
+
+    .statistiques {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 650px) {
+
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        padding: 15px;
+    }
+
+    .sidebar h3 {
+        margin-bottom: 15px;
+        padding-bottom: 12px;
+    }
+
+    .sidebar a {
+        margin-bottom: 5px;
+    }
+
+    .conteneur {
+        margin-left: 0;
+        padding: 22px 15px;
+    }
+
+    h1 {
+        font-size: 23px;
+    }
+
+    .notification {
+        padding: 18px;
+    }
+
+    .entete-notification h2 {
+        font-size: 17px;
+    }
+}
     </style>
 </head>
 
 <body>
+    
+    <aside class="sidebar">
+
+        <h3>Espace Surveillant</h3>
+
+        <a href="espace_surv.php" class="active">
+            Tableau de bord
+        </a>
+
+        <a href="mes_notifications_surv.php">
+            Mes notifications
+
+            <?php if ($notificationsNonLues > 0): ?>
+                <span class="badge-menu">
+                    <?= $notificationsNonLues ?>
+                </span>
+            <?php endif; ?>
+        </a>
+
+        <a href="profil_surv.php">
+            Mon profil
+        </a>
+
+        <a href="affectations_surv.php">
+            Mes affectations
+        </a>
+
+        <a href="documents_partages_surv.php">
+            Documents partagés
+        </a>
+
+        <a href="rapports_surv.php">
+            Mes rapports PDF
+        </a>
+
+        <!-- Accès à la page des commentaires -->
+        <a href="commentaires_surv.php">
+            Commentaires
+        </a>
+
+        <a href="changer_mdp_surv.php">
+            Changer mon mot de passe
+        </a>
+
+        <a href="logout_surv.php" class="logout">
+            Déconnexion
+        </a>
+
+    </aside>
+    
 <div class="conteneur">
 
     <a class="retour" href="espace_surv.php">

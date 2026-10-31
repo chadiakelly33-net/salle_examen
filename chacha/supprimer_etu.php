@@ -9,7 +9,7 @@ if(!isset($_SESSION["id_admin"]) || $_SESSION["role"]!="admin"){
 
 
 include("connexionDB.php");
-include("journal.php");
+/*include("journal.php");*/
 
 
 if(isset($_GET["id"])){
@@ -31,12 +31,12 @@ if(isset($_GET["id"])){
 
 
 
-    journal(
-        $bdd,
-        $_SESSION["id_admin"],
-        "Administrateur",
-        "Suppression d'un étudiant"
-    );
+    // journal(
+        // $bdd,
+        // $_SESSION["id_admin"],
+        // "Administrateur",
+        // "Suppression d'un étudiant"
+    // );
 
 }
 

@@ -3,15 +3,13 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+// Charger PHPMailer
 require_once __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . '/connexionDB.php';
 
-/**
- * Génère un code à six chiffres, l'enregistre en base
- * et l'envoie par e-mail.
- *
- * Retourne true si l'envoi réussit, false sinon.
- */
+// Charger la configuration SMTP
+require_once __DIR__ . '/smtp_config.php';
+
+
 function envoyerCodeVerification(
     PDO $bdd,
     int $userId,
@@ -19,71 +17,63 @@ function envoyerCodeVerification(
     string $email
 ): bool {
 
-    // 1. Vérifier le type d'utilisateur.
+    // 1. Vérifier le type d'utilisateur
     $typesAutorises = ['etudiant', 'surveillant', 'admin'];
 
     if (!in_array($typeUser, $typesAutorises, true)) {
-        error_log("CHACHA : type d'utilisateur invalide.");
+        error_log("CHACHA : type utilisateur invalide.");
         return false;
     }
 
-    // 2. Vérifier l'identifiant et l'adresse e-mail.
+    // 2. Vérifier les informations
     if (
         $userId <= 0 ||
         !filter_var($email, FILTER_VALIDATE_EMAIL)
     ) {
-        error_log("CHACHA : identifiant ou adresse e-mail invalide.");
+        error_log("CHACHA : identifiant ou email invalide.");
         return false;
     }
 
-    // 3. Récupérer la configuration SMTP.
-    $smtpHost = getenv('CHACHA_SMTP_HOST');
-    $smtpPort = getenv('CHACHA_SMTP_PORT');
-    $smtpUser = getenv('CHACHA_SMTP_USER');
-    $smtpPassword = getenv('CHACHA_SMTP_PASSWORD');
-    $smtpFrom = getenv('CHACHA_SMTP_FROM');
+    // 3. Récupérer les paramètres SMTP
+    $smtpHost = CHACHA_SMTP_HOST;
+    $smtpPort = CHACHA_SMTP_PORT;
+    $smtpUser = CHACHA_SMTP_USER;
+    $smtpPassword = CHACHA_SMTP_PASSWORD;
+    $smtpFrom = CHACHA_SMTP_FROM;
 
-    // 4. Vérifier la configuration SMTP.
+    // 4. Vérifier la configuration SMTP
     if (
-        $smtpHost === false || trim($smtpHost) === '' ||
-        $smtpPort === false || trim($smtpPort) === '' ||
-        $smtpUser === false || trim($smtpUser) === '' ||
-        $smtpPassword === false || $smtpPassword === '' ||
-        $smtpFrom === false || trim($smtpFrom) === '' ||
-        !ctype_digit((string) $smtpPort) ||
-        (int) $smtpPort < 1 ||
-        (int) $smtpPort > 65535 ||
+        empty($smtpHost) ||
+        empty($smtpPort) ||
+        empty($smtpUser) ||
+        empty($smtpPassword) ||
+        empty($smtpFrom) ||
         !filter_var($smtpUser, FILTER_VALIDATE_EMAIL) ||
         !filter_var($smtpFrom, FILTER_VALIDATE_EMAIL)
     ) {
-        error_log("CHACHA : configuration SMTP absente ou invalide.");
+        error_log("CHACHA : configuration SMTP invalide.");
         return false;
     }
 
-    // 5. Définir explicitement le fuseau horaire de Bujumbura.
+    // 5. Générer le code
     $fuseau = new DateTimeZone('Africa/Bujumbura');
 
-    // Capturer l'heure une seule fois pour garantir la cohérence.
     $maintenant = new DateTimeImmutable('now', $fuseau);
 
-    // Générer un code sécurisé à six chiffres.
     $code = (string) random_int(100000, 999999);
 
-    // Calculer l'expiration : cinq minutes après la création.
     $dateCreation = $maintenant->format('Y-m-d H:i:s');
 
     $dateExpiration = $maintenant
         ->modify('+5 minutes')
         ->format('Y-m-d H:i:s');
 
-    /*
-     * 6. Enregistrer le code dans la base de données.
-     */
+    // 6. Enregistrer le code dans la base de données
     try {
 
         $bdd->beginTransaction();
 
-        // Invalider les anciens codes non utilisés de cet utilisateur.
+        // Désactiver les anciens codes
         $req = $bdd->prepare("
             UPDATE verification_code
             SET utilise = 1
@@ -94,7 +84,7 @@ function envoyerCodeVerification(
 
         $req->execute([$userId, $typeUser]);
 
-        // Enregistrer le nouveau code avec des dates explicites.
+        // Enregistrer le nouveau code
         $req = $bdd->prepare("
             INSERT INTO verification_code (
                 user_id,
@@ -126,40 +116,49 @@ function envoyerCodeVerification(
         }
 
         error_log(
-            "CHACHA : erreur lors de l'enregistrement du code : "
-            . $e->getMessage()
+            "CHACHA : erreur base de données : " .
+            $e->getMessage()
         );
 
         return false;
     }
 
-    /*
-     * 7. Préparer et envoyer l'e-mail.
-     */
+    // 7. Préparer l'envoi du mail
     $mail = new PHPMailer(true);
 
     try {
 
         $mail->isSMTP();
 
+        // Diagnostic SMTP dans les journaux du serveur
+        $mail->SMTPDebug = 2;
+
+        $mail->Debugoutput = function ($str, $level) {
+            error_log("CHACHA SMTP [$level] : $str");
+        };
+
+        // Configuration SMTP
         $mail->Host = $smtpHost;
         $mail->SMTPAuth = true;
+
         $mail->Username = $smtpUser;
         $mail->Password = $smtpPassword;
 
-        // Connexion SMTP sécurisée.
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = (int) $smtpPort;
 
         $mail->CharSet = 'UTF-8';
 
+        // Expéditeur
         $mail->setFrom(
             $smtpFrom,
             'CHACHA - Salle d’examen'
         );
 
+        // Destinataire
         $mail->addAddress($email);
 
+        // Contenu du message
         $mail->isHTML(true);
 
         $mail->Subject = 'Votre code de vérification CHACHA';
@@ -172,6 +171,7 @@ function envoyerCodeVerification(
 
         $mail->Body = '
             <div style="font-family:Arial,sans-serif;line-height:1.6;">
+
                 <h2>CHACHA - Salle d’examen</h2>
 
                 <p>Bonjour,</p>
@@ -187,29 +187,33 @@ function envoyerCodeVerification(
                 </p>
 
                 <p>
-                    Ce code expire dans cinq minutes et ne peut être
-                    utilisé qu’une seule fois.
+                    Ce code expire dans cinq minutes
+                    et ne peut être utilisé qu’une seule fois.
                 </p>
 
                 <p>
                     Si vous n’êtes pas à l’origine de cette demande,
                     ignorez ce message.
                 </p>
+
             </div>
         ';
 
         $mail->AltBody =
-            "Bonjour. Votre code de vérification CHACHA est : "
-            . $code
-            . ". Il expire dans cinq minutes et ne peut être utilisé qu'une seule fois.";
+            "Votre code de vérification CHACHA est : " .
+            $code .
+            ". Il expire dans cinq minutes.";
 
+        // Envoyer le message
         $mail->send();
+
+        error_log("CHACHA : email envoyé avec succès.");
 
         return true;
 
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
 
-        // Si l'envoi échoue, invalider le code enregistré.
+        // Invalider le code si l'envoi échoue
         try {
 
             $req = $bdd->prepare("
@@ -223,16 +227,20 @@ function envoyerCodeVerification(
         } catch (Throwable $dbError) {
 
             error_log(
-                "CHACHA : impossible d'invalider le code après l'échec de l'envoi."
+                "CHACHA : impossible d'invalider le code."
             );
         }
 
         error_log(
-            "CHACHA : erreur SMTP PHPMailer : "
-            . $mail->ErrorInfo
+            "CHACHA : erreur SMTP : " .
+            $e->getMessage()
+        );
+
+        error_log(
+            "CHACHA : détails PHPMailer : " .
+            $mail->ErrorInfo
         );
 
         return false;
     }
 }
-

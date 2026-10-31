@@ -84,135 +84,254 @@ $documents = $requete->fetchAll(PDO::FETCH_ASSOC);
     <title>Documents partagés</title>
 
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f9;
-            margin: 0;
-            padding: 25px;
-            color: #333;
+        <style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+        margin: 0;
+        padding: 0;
+        color: #333;
+    }
+
+    /* MENU LATÉRAL */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 230px;
+        height: 100vh;
+        background: #003366;
+        padding: 25px 15px;
+        overflow-y: auto;
+        z-index: 1000;
+    }
+
+    .sidebar h3 {
+        color: white;
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 19px;
+    }
+
+    .sidebar a {
+        display: block;
+        color: white;
+        text-decoration: none;
+        padding: 13px 12px;
+        margin-bottom: 7px;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: 0.3s;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+        background: #d4a72c;
+        color: #003366;
+        font-weight: bold;
+    }
+
+    .sidebar .logout {
+        margin-top: 25px;
+        border-top: 1px solid rgba(255,255,255,0.25);
+        padding-top: 18px;
+    }
+
+    .badge-menu {
+        background: #d4a72c;
+        color: #003366;
+        padding: 3px 7px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: bold;
+        float: right;
+    }
+
+    /* CONTENU PRINCIPAL */
+    .container {
+        max-width: 1200px;
+        margin-left: 230px;
+        padding: 35px 40px;
+    }
+
+    .container h2 {
+        color: #003366;
+        font-size: 27px;
+        margin-bottom: 10px;
+    }
+
+    .description {
+        color: #666;
+        margin-bottom: 25px;
+        line-height: 1.6;
+    }
+
+    .navigation {
+        margin-bottom: 22px;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 11px 17px;
+        border: none;
+        border-radius: 6px;
+        background: #003366;
+        color: white;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 14px;
+        transition: 0.3s;
+    }
+
+    .btn:hover {
+        background: #d4a72c;
+        color: #003366;
+    }
+
+    .reinitialiser {
+        background: #6c757d;
+    }
+
+    .reinitialiser:hover {
+        background: #555;
+        color: white;
+    }
+
+    /* RECHERCHE */
+    .search-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 25px 0;
+    }
+
+    .search-form input {
+        flex: 1;
+        min-width: 220px;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .search-form input:focus {
+        border-color: #003366;
+        box-shadow: 0 0 4px rgba(0,51,102,0.2);
+    }
+
+    /* TABLEAU */
+    .table-container {
+        overflow-x: auto;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        margin-top: 15px;
+    }
+
+    table {
+        width: 100%;
+        min-width: 750px;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 15px;
+        border-bottom: 1px solid #e5e5e5;
+        text-align: left;
+        line-height: 1.5;
+    }
+
+    th {
+        background: #003366;
+        color: white;
+        font-size: 14px;
+    }
+
+    tbody tr:hover {
+        background: #fff9e8;
+    }
+
+    td {
+        font-size: 14px;
+    }
+
+    /* ACTIONS */
+    .action {
+        display: inline-block;
+        padding: 8px 12px;
+        margin: 3px;
+        border-radius: 5px;
+        text-decoration: none;
+        color: white;
+        font-size: 13px;
+        transition: 0.3s;
+    }
+
+    .consulter {
+        background: #003366;
+    }
+
+    .telecharger {
+        background: #198754;
+    }
+
+    .action:hover {
+        opacity: 0.8;
+        transform: translateY(-1px);
+    }
+
+    /* RÉSULTATS */
+    .vide {
+        background: white;
+        padding: 30px;
+        text-align: center;
+        color: #666;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        margin-top: 15px;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+        .sidebar {
+            position: relative;
+            width: 100%;
+            height: auto;
+            padding: 15px;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 15px;
         }
 
         .container {
-            max-width: 1100px;
-            margin: auto;
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            margin-left: 0;
+            padding: 20px 15px;
         }
 
-        h2 {
-            color: #003366;
-            margin-bottom: 10px;
-        }
-
-        .description {
-            color: #666;
-            margin-bottom: 25px;
-        }
-
-        .navigation {
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 11px 15px;
-            border: none;
-            border-radius: 5px;
-            background: #003366;
-            color: white;
-            text-decoration: none;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .btn:hover {
-            opacity: 0.85;
-        }
-
-        .reinitialiser {
-            background: #6c757d;
+        .container h2 {
+            font-size: 23px;
         }
 
         .search-form {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 25px;
+            flex-direction: column;
         }
 
         .search-form input {
-            flex: 1;
-            min-width: 200px;
-            padding: 11px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .table-container {
-            overflow-x: auto;
-        }
-
-        table {
             width: 100%;
-            border-collapse: collapse;
         }
 
-        th,
-        td {
-            padding: 13px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-        }
-
-        th {
-            background: #003366;
-            color: white;
-        }
-
-        tr:hover {
-            background: #f5f8fc;
-        }
-
-        .action {
-            display: inline-block;
-            padding: 8px 12px;
-            margin: 3px;
-            border-radius: 5px;
-            text-decoration: none;
-            color: white;
-            font-size: 13px;
-        }
-
-        .consulter {
-            background: #003366;
-        }
-
-        .telecharger {
-            background: #198754;
-        }
-
-        .action:hover {
-            opacity: 0.85;
-        }
-
-        .vide {
-            padding: 20px;
+        .search-form .btn {
             text-align: center;
-            color: #666;
         }
+    }
+</style>
 
-        @media (max-width: 600px) {
-            body {
-                padding: 10px;
-            }
-
-            .container {
-                padding: 15px;
-            }
-        }
     </style>
 </head>
 

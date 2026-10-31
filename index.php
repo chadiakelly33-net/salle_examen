@@ -4,6 +4,9 @@ session_start();
 
 <html lang="fr">
 <head>
+
+<meta name="google-site-verification" content="ifoXriRfwY6W6gSgZlDZUPU4PLiW3nl3z_5PN9qIGME" />
+
 <meta charset="UTF-8">
 <title>Choix du rôle</title>
 
@@ -97,7 +100,7 @@ p{
 
         <div class="role">
             <h2> Administrateur</h2>
-            <a href="chacha/">Se connecter</a>
+            <a href="chacha/connexion.php">Se connecter</a>
         </div>
 
     </div>

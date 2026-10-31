@@ -203,135 +203,262 @@ require_once __DIR__ . "/../session_timeout.php";
 
 <style>
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+<style>
+/* ==============================
+   STYLE GENERAL
+============================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-
-body{
-
-    font-family:Arial, sans-serif;
-
-    background:#eef4f7;
-
-    min-height:100vh;
-
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f6f9;
+    color: #333;
+    min-height: 100vh;
 }
 
+/* ==============================
+   BARRE LATERALE
+============================== */
 
-.container{
-
-    width:90%;
-
-    max-width:1100px;
-
-    margin:40px auto;
-
-    background:white;
-
-    padding:30px;
-
-    border-radius:10px;
-
-    box-shadow:0 2px 10px rgba(0,0,0,.1);
-
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 230px;
+    height: 100vh;
+    background: #003366;
+    padding: 25px 15px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 3px 0 12px rgba(0,0,0,0.12);
 }
 
-
-h2{
-
-    color:#355c7d;
-
-    text-align:center;
-
-    margin-bottom:25px;
-
+.sidebar h3 {
+    color: white;
+    text-align: center;
+    font-size: 20px;
+    margin-bottom: 35px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
 }
 
-
-table{
-
-    width:100%;
-
-    border-collapse:collapse;
-
+.sidebar a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    color: #e8eef7;
+    padding: 13px 14px;
+    margin-bottom: 8px;
+    border-radius: 7px;
+    font-size: 14px;
+    transition: 0.3s ease;
 }
 
-
-th{
-
-    background:#355c7d;
-
-    color:white;
-
-    padding:12px;
-
+.sidebar a:hover,
+.sidebar a.active {
+    background: #d4a72c;
+    color: #003366;
+    font-weight: bold;
 }
 
-
-td{
-
-    padding:12px;
-
-    border:1px solid #ddd;
-
-    text-align:center;
-
+.sidebar a.logout {
+    margin-top: 25px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 18px;
 }
 
-
-tr:hover{
-
-    background:#f1f7fa;
-
+.badge-menu {
+    background: #d4a72c;
+    color: #003366;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
 }
 
+/* ==============================
+   CONTENU PRINCIPAL
+============================== */
 
-.message{
-
-    background:#fff3cd;
-
-    color:#856404;
-
-    padding:15px;
-
-    border-radius:8px;
-
-    text-align:center;
-
+.container {
+    margin-left: 230px;
+    padding: 35px 40px;
+    max-width: 1500px;
 }
 
-
-.btn{
-
-    display:block;
-
-    width:150px;
-
-    margin:25px auto 0;
-
-    text-align:center;
-
-    text-decoration:none;
-
-    color:white;
-
-    background:#7aa6c2;
-
-    padding:10px 15px;
-
-    border-radius:8px;
-
+h2 {
+    color: #003366;
+    font-size: 27px;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #d4a72c;
 }
 
+/* ==============================
+   ACTIONS
+============================== */
 
-.btn:hover{
-
-    background:#5f8da8;
-
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 25px;
 }
+
+.btn-export,
+.btn-retour {
+    display: inline-block;
+    text-decoration: none;
+    padding: 12px 18px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: bold;
+    transition: 0.3s ease;
+}
+
+.btn-export {
+    background: #003366;
+    color: white;
+}
+
+.btn-export:hover {
+    background: #d4a72c;
+    color: #003366;
+}
+
+.btn-retour {
+    background: #d4a72c;
+    color: #003366;
+    margin-top: 25px;
+}
+
+.btn-retour:hover {
+    background: #003366;
+    color: white;
+}
+
+/* ==============================
+   TABLEAU
+============================== */
+
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e5eaf0;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+thead th {
+    background: #003366;
+    color: white;
+    padding: 16px 13px;
+    text-align: center;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+tbody td {
+    padding: 15px 13px;
+    border-bottom: 1px solid #e8edf3;
+    text-align: center;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+tbody tr:nth-child(even) {
+    background: #f8fafc;
+}
+
+tbody tr:hover {
+    background: #fff8e5;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ==============================
+   MESSAGE VIDE
+============================== */
+
+.message {
+    background: #fffdf6;
+    color: #805b00;
+    padding: 20px;
+    border-left: 5px solid #d4a72c;
+    border-radius: 8px;
+    margin-top: 20px;
+    line-height: 1.6;
+}
+
+/* ==============================
+   RESPONSIVE
+============================== */
+
+@media (max-width: 850px) {
+
+    .container {
+        padding: 25px;
+    }
+
+    h2 {
+        font-size: 23px;
+    }
+}
+
+@media (max-width: 650px) {
+
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        padding: 15px;
+    }
+
+    .sidebar h3 {
+        margin-bottom: 15px;
+        padding-bottom: 12px;
+    }
+
+    .sidebar a {
+        margin-bottom: 5px;
+    }
+
+    .container {
+        margin-left: 0;
+        padding: 22px 15px;
+    }
+
+    h2 {
+        font-size: 21px;
+    }
+
+    .btn-export,
+    .btn-retour {
+        font-size: 13px;
+    }
+
+    thead th,
+    tbody td {
+        padding: 11px;
+        font-size: 12px;
+    }
+}
+</style>
 
 </style>
 
